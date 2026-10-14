@@ -1,7 +1,7 @@
 # Data, runs and large binaries never go in git (spec Rule 0.6)
-data/
-experiments/
-yolo_data/
+/data/
+/experiments/
+/yolo_data/
 *.pkl
 *.npz
 
