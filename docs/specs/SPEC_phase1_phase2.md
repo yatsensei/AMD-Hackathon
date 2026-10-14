@@ -110,7 +110,7 @@ Center ≈ 4,294 · Donut ≈ 555 · Edge-Loc ≈ 5,189 · Edge-Ring ≈ 9,680 �
 **Definition of done:** every item in Section 3.10 is checked and `pytest tests/test_data.py` passes.
 
 ### 3.1 Environment
-- CPU machine: Python ≥ 3.10 with `numpy pandas scikit-learn opencv-python-headless pyarrow tqdm pyyaml pillow matplotlib`. Pin versions in `requirements.txt`.
+- CPU machine: Python ≥ 3.10 with `numpy pandas scikit-learn opencv-python-headless pyarrow tqdm pyyaml pillow matplotlib`. Versions in `requirements.txt` are bounded (so one file installs on Python 3.10–3.13); the exact versions that built the data are recorded in the data report.
 - GPU box: use the Python that ships in the ROCm PyTorch image. **Don't try to force a specific Python version there.** Outputs are `.npz`/`.parquet`, which work across versions.
 
 ### 3.2 Download — `scripts/download_data.sh`
@@ -175,20 +175,21 @@ Default `S = 64`. Also produce `S = 96` (non-critical) for E4.
 
 Unit tests: shape (S, S); A ⊆ {0,1,2}; B in [0,1]; `pass_frac ≥ 0`; **scratch survival** for both the on-grid and the one-die-offset diagonal (B must keep fail_frac > 0 along the whole line; the test documents that A doesn't).
 
-### 3.6 Deduplicate — `wafer/data/preprocess.py::dedupe()`
-- Hash each **original** map: `hashlib.sha1(map.tobytes() + str(map.shape).encode())`.
-- Report: number of duplicate groups, number of groups with **conflicting labels** (report as the measured label-noise floor), and the class mix of duplicates.
-- After splitting (3.7): **drop from val and test any map with `n_fail ≥ 1` whose hash also appears in train.** Keep them in train. Identical maps with **zero** fail dies are different physical wafers that happen to look the same. Keep them, because dropping them would take easy `none` wafers out of evaluation. Log counts in the data report.
+### 3.6 Deduplicate by linking lots — `wafer/data/preprocess.py::link_lots()`
+- Hash each **original** map: `hashlib.sha1(map.tobytes() + str(map.shape).encode())` (as uint8).
+- A map is **informative** if `min(n_fail, n_pass) ≥ 1` (`--dup-min-minority`). Identical *uniform* maps (all-pass, all-fail) are expected between different physical wafers of the same product and are ignored. An identical map with both pass and fail dies is treated as the same wafer recorded twice.
+- **Before splitting**, lots that share an informative map are merged into one `split_group` (union-find). The split (3.7) groups by `split_group`, so every copy of a duplicated wafer lands in the same split. **Nothing is dropped**, and the seed search sees the final class counts. After splitting, assert that no informative map appears in two splits.
+- Report: duplicate groups (all / informative), groups with **conflicting labels** (the measured label-noise floor), class mix, lots linked, and the largest linked group. The pipeline warns if one group holds > 1% of wafers. If that happens, consider `--dup-min-minority 2` and log it.
 
 ### 3.7 Split — `wafer/data/split.py`
-Lot-grouped **and** stratified, 70/15/15, with an **automatic, logged seed search**:
+Grouped by `split_group` (a lot, or lots linked by duplicate maps, 3.6) **and** stratified, 70/15/15, with an **automatic, logged seed search**:
 ```python
 from sklearn.model_selection import StratifiedGroupKFold
 
 def make_split(df, seed):
     sgkf = StratifiedGroupKFold(n_splits=20, shuffle=True, random_state=seed)
     fold = np.empty(len(df), dtype=int)
-    for k, (_, idx) in enumerate(sgkf.split(df, df["label"], groups=df["lotName"])):
+    for k, (_, idx) in enumerate(sgkf.split(df, df["label"], groups=df["split_group"])):
         fold[idx] = k
     return np.select([fold < 3, fold < 6], ["test", "val"], default="train")  # 3/20, 3/20
 
@@ -197,22 +198,23 @@ def make_split(df, seed):
 # keep the lowest-score split that satisfies MIN_COUNT[class] in both val and test
 # (default MIN_COUNT: 15 for Near-full, 50 for Donut, 100 otherwise; adjust after seeing lots-per-class)
 ```
-The full search takes a few minutes (each split takes about 6 s at full size). Then **assert**:
-- no `lotName` appears in more than one split
+The full search runs in parallel (`--jobs`). Measured on a real-scale synthetic set (173k labelled wafers): about 2.5 min on 4 cores, and the whole pipeline in under 4 min at 3.3 GB peak RAM for 373k raw rows. Expect roughly 6–8 GB for the real 811k rows. The chosen seed and parameters go to `data/processed/split_params.json`. Then **assert**:
+- no `lotName` or `split_group` appears in more than one split; no informative map appears in two splits
 - every class meets `MIN_COUNT` in val and test
 - relative class-share deviation ≤ 25% per class per split (log the actual worst case)
 
 **Report lots per class** in the data report (`df.groupby("label").lotName.nunique()`). A synthetic worst case (`docs/specs/evidence/split_sim.py`) put all Near-full in test and none in val. The seed search is there to stop that silently happening on real data.
 
-`cv_fold` (0–4): a second `StratifiedGroupKFold(n_splits=5)` over **train + val** lots, for optional CV (6.4) and E11. Test lots get `cv_fold = -1`.
+`cv_fold` (0–4): a second `StratifiedGroupKFold(n_splits=5)` over **train + val** split groups, for optional CV (6.4) and E11. Test lots get `cv_fold = -1`.
 
 **Do not downsample `none` here.** That's done per epoch in training (Section 5.3).
 
 ### 3.8 Save outputs
 | Path | Contents | Consumer | Critical path? |
 |---|---|---|---|
-| `data/processed/wafers_s64.npz` | `X_area` uint8 (N,2,64,64) ×255, `X_nearest` uint8 (N,64,64), `y` int64, `uid` int64 — **all labelled wafers after dedupe**, aligned by row. `np.savez_compressed` | Phase 2 | **Yes** |
-| `data/processed/metadata.parquet` | `uid, lotName, waferIndex, label, label_idx, split, cv_fold, orig_h, orig_w, n_die, n_fail, dieSize, hash, dup_group, orig_split` | Phases 2, 3, 4 | **Yes** |
+| `data/processed/wafers_s64.npz` | `X_area` uint8 (N,2,64,64) ×255, `X_nearest` uint8 (N,64,64), `y` int64, `uid` int64 — **every valid labelled wafer** (sorted by `uid`), aligned by row with `metadata.parquet`. `np.savez_compressed` | Phase 2 | **Yes** |
+| `data/processed/metadata.parquet` | `uid, lotName, split_group, waferIndex, label, label_idx, split, cv_fold, orig_h, orig_w, n_die, n_fail, dieSize, hash, dup_group, orig_split` | Phases 2, 3, 4 | **Yes** |
+| `data/processed/split_params.json` | chosen split seed, seeds tried / feasible, `min_count`, `max_rel_dev`, `cv_seed`, `dup_min_minority` | tests, reproducibility | **Yes** |
 | `docs/results/data_report.md` | File SHA-256, class counts **and lot counts** per split, chosen split seed and its worst-case deviation, duplicates (total / conflicting / dropped), lots filled, map-size histogram | Pitch + everyone | Counts yes, figures no |
 | `yolo_data/{train,val,test}/<class>/<uid>.png` | 64×64 PNGs from `wafer/viz.py::render_wafer()`. Phase 3 chooses whether to render from A or B (see review §3) | Phase 3 | No |
 
@@ -231,8 +233,8 @@ The YOLO PNGs, the dashboard (Phase 6) and pitch figures must all use these func
 - [ ] `wafer/data/load.py` loads the pickle; the patch is documented
 - [ ] Labelled count = 172,950 (or the real number is logged with an explanation)
 - [ ] Both encodings produced; scratch-survival tests (on-grid and offset) pass
-- [ ] Dedup done; total / conflicting / dropped counts logged
-- [ ] Lot-grouped split via seed search; all assertions pass; lots per class reported
+- [ ] Duplicates hashed; lots sharing informative maps linked; duplicate, conflict and linking counts logged
+- [ ] Grouped split via seed search; all assertions pass; lots per class reported
 - [ ] **Thu 10:00:** `wafers_s64.npz`, `metadata.parquet` written → Phase 2 unblocked
 - [ ] `yolo_data/`, `wafers_s96.npz`, report figures (non-critical)
 - [ ] `docs/results/data_report.md` written
@@ -428,7 +430,7 @@ Report macro-F1 by:
 - Sanity inputs: an all-pass wafer → `none`; an all-fail wafer → `Near-full`; an all-zero map → `ValueError` (9.1)
 
 ### 7.3 Statistics
-- **Bootstrap CIs by lot:** resample lots with replacement 1,000 times; 95% CI for macro-F1, defect macro-F1, balanced accuracy, defect recall and per-class F1. Resampling lots (not wafers) respects the correlation within a lot. Say plainly that Near-full and Donut CIs are wide.
+- **Bootstrap CIs by lot:** resample `split_group`s (a lot, or lots linked by duplicate maps) with replacement 1,000 times; 95% CI for macro-F1, defect macro-F1, balanced accuracy, defect recall and per-class F1. Resampling lots (not wafers) respects the correlation within a lot. Say plainly that Near-full and Donut CIs are wide.
 - **Paired comparisons (primary significance test):** paired lot-bootstrap of Δmacro-F1 and Δdefect-recall between two models on the same wafers (same lot resample for both). Significant ⇔ 95% CI excludes 0. Used for E-COMB vs E0, v2 vs v1, and final vs comparators.
 - **McNemar (secondary):** reported with the caveat that it treats wafers as independent (they aren't, within a lot) and tests accuracy, not macro-F1.
 - Across seeds: mean ± SD for every Tier 1 row.
@@ -546,7 +548,7 @@ Sections: intended use (assist yield engineers; not an autonomous decision-maker
 - `_flat` handles `[['x']]`, `['x']`, `[]`
 - resize: shapes, value sets, `pass_frac ≥ 0`, scratch survival on-grid **and** one-die-offset (3.5)
 - split: no lot overlap; `MIN_COUNT` met; relative deviation within tolerance; `cv_fold ∈ {-1,0..4}` and `-1` exactly on test
-- no cross-split duplicate hashes with `n_fail ≥ 1` in val/test
+- `informative`, `link_lots` (chains merge; uniform maps never link) and the cross-split duplicate check; on the synthetic set, planted duplicates share the original's split and nothing is dropped
 - npz rows align with metadata `uid`s
 
 **`test_model.py`**
@@ -596,7 +598,7 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | review | Fixed-length cosine, no early stopping; 5 seeds | Early stopping cuts cosine at high LR and tunes on noisy val macro-F1; runs are cheap |
 | 14 Oct | review | Paired lot-bootstrap replaces McNemar as primary test | McNemar ignores lot correlation and tests accuracy, not macro-F1 |
 | 14 Oct | review | Encoding B is the default from E0 | Measured: a one-die-offset scratch disappears completely under nearest (0/140 pixels) |
-| 14 Oct | review | Drop cross-split dupes only if `n_fail ≥ 1`; report conflicting-label dupes as noise floor | Identical all-pass maps are different wafers; dropping them biases eval |
+| 14 Oct | review | ~~Drop cross-split dupes only if `n_fail ≥ 1`~~ (superseded below); report conflicting-label dupes as noise floor | Identical all-pass maps are different wafers; dropping them biases eval |
 | 14 Oct | review | Automatic split-seed search with minimum per-class counts; report lots per class | Rare classes in few lots can vanish from val (simulated worst case: Near-full 0 in val) |
 | 14 Oct | review | Fix `cv_fold` to 0–4 over train+val | v1 said 0–13 and contradicted its own CV description |
 | 14 Oct | review | GPU-resident data, no DataLoader; parallel runs; per-run `summary.json` + aggregator | Data is ~2 GB; avoids worker issues and leaderboard merge conflicts |
@@ -605,6 +607,12 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | review | `load_model` returns `WaferClassifier`; output adds `defect_prob`, `review_reasons`; plain types; train/serve parity test | v1 API was ambiguous about which model `classify` used; additive change, call sites unchanged |
 | 14 Oct | review | Demo stream from val until final eval, then test | Dashboard development would otherwise show test predictions for days |
 | 14 Oct | review | Phase 1 critical path = npz + parquet by Thu 10:00; YOLO PNGs off critical path | Phase 2 doesn't need PNGs |
+| 14 Oct | Phase 1 impl | **Link lots that share an informative duplicate map into one `split_group` before splitting, instead of dropping duplicates after.** Informative = `min(n_fail, n_pass) ≥ 1` | Real-scale synthetic run: dropping after the split pushed Near-full test below its minimum (12 < 15) after the seed search had already passed it. All-fail maps also repeat between different wafers. Linking loses no wafers and keeps the search honest |
+| 14 Oct | Phase 1 impl | Bootstrap and CV by `split_group` | Linked lots are not independent |
+| 14 Oct | Phase 1 impl | `uid` = positional row number in the raw dataframe | Stable regardless of the pickle's index |
+| 14 Oct | Phase 1 impl | Labelled rows that aren't 2D, have values outside {0,1,2}, or have no dies are dropped and counted in the report | `infer` rejects such maps anyway (9.1); keeping them would poison training |
+| 14 Oct | Phase 1 impl | `requirements.txt` uses bounded versions; exact versions recorded in the data report | Exact pins can't install on both Python 3.10 (ROCm image) and 3.13 |
+| 14 Oct | Phase 1 impl | Split search runs in a `spawn` process pool | Forking a process that already runs BLAS threads can deadlock |
 | | | | |
 
 ---

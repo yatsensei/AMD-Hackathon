@@ -1,0 +1,18 @@
+# Data, runs and large binaries never go in git (spec Rule 0.6)
+data/
+experiments/
+yolo_data/
+*.pkl
+*.npz
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Secrets
+.env
+kaggle.json

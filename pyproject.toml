@@ -1,0 +1,13 @@
+[project]
+name = "wafer"
+version = "0.1.0"
+description = "Wafer-map yield copilot (AMD Developer Hackathon ACT III)"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+include = ["wafer*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"

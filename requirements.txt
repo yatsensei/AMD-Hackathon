@@ -1,0 +1,14 @@
+# Phase 1 (CPU) + shared. Bounded rather than exact so the same file installs on Python 3.10-3.13
+# (the ROCm image ships its own Python). The exact versions used to build the data are recorded
+# in docs/results/data_report.md. The GPU/ROCm PyTorch install is separate (spec 4.1).
+numpy>=1.26,<3
+pandas>=2.0,<4
+scikit-learn>=1.3,<2
+opencv-python-headless>=4.8,<6
+pyarrow>=14
+pyyaml>=6
+pillow>=10
+matplotlib>=3.7
+tqdm>=4.65
+pytest>=7.4
+# download only: kaggle
