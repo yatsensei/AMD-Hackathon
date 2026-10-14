@@ -46,7 +46,7 @@ WM-811K is a well-known benchmark, so a high number alone won't stand out. Our e
 - **Rigorously compared:** baselines (including a classical one), 5 seeds, and paired lot-bootstrap tests.
 
 Pitch line we are aiming to be able to say truthfully:
-> "Evaluated on a lot-grouped split — which on our own model is worth **L** points of macro-F1 compared with the usual wafer-random split — our model reaches **X** macro-F1 (95% CI **a–b**), catches **R**% of defective wafers, is calibrated to **Y**% ECE on defect predictions, and routes the **Z**% of wafers it's unsure about to an engineer."
+> "Evaluated on a lot-grouped split (we checked: a wafer-random split gives the same score, so there's no leakage hiding in the number), our model reaches **X** macro-F1 (95% CI **a–b**), catches **R**% of defective wafers, is calibrated to **Y**% ECE on defect predictions, and routes the **Z**% of wafers it's unsure about to an engineer."
 
 ### 1.3 Targets (for steering effort, not promises)
 | Metric (validation, lot-grouped) | Minimum to hand off | Stretch |
@@ -626,6 +626,7 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | Phase 1 real run | Linked split groups holding > 1% of wafers are pinned to **train** (`--pin-train-frac`) | Real data: 3,234 informative maps appear identically in two lots and chain 598 lots (12,596 wafers, all one 26×26 product) into one group, which otherwise landed whole in test (half of it). Leakage stays blocked; val/test keep a natural product mix. Split is now 72/14/14 |
 | 14 Oct | Phase 1 real run | Dataset downloaded without credentials via Kaggle's public download endpoint (redirects to Kaggle's own GCS bucket); SHA-256 `1d04fccb…5c65` recorded in the data report | No Kaggle token in Claude's environment; dataset is public |
 | 14 Oct | v0 | `models/v0` trained on **CPU** (`configs/e0_cpu.yaml`: 1 seed, 30 epochs, bf16 + channels_last) | Token Factory has no GPU instances. v0 must not be described as trained on AMD; retrain with `e0_baseline.yaml` on an AMD GPU when one is available |
+| 14 Oct | E-LEAK result | **No measurable leakage inflation**: wafer-random split val macro-F1 0.9018 vs lot-grouped 0.9016 (raw argmax 0.859 vs 0.855; 1 seed each, CPU, CI half-width ~0.015). The pitch must not claim "lot grouping is worth L points"; the honest line is "we tested for lot leakage and found none: the score holds under both protocols". Lot grouping stays (it costs nothing and is the right protocol) | Real-data result overturns a spec assumption |
 | 14 Oct | Phase 2 impl | Noise-robustness slice flips pixels of the 64×64 encoding, not raw dies | Evaluation works from the npz; documented as pixel-level |
 | | | | |
 
