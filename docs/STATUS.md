@@ -26,7 +26,7 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | Calibration, operating point, abstention (`calibrate.py`, `decision.py`) | Anisha / Akein | ✅ | Tested on toy data |
 | `metrics.py`, `evaluate.py` (val; `--final` once; `--predictions` CSV) | Anisha / Akein | ✅ | |
 | `wafer/infer.py` + `wafer/explain.py` + `wafer/export.py` | Anisha / Akein | ✅ | Serving `models/v0` (CPU); sanity inputs pass |
-| E0 baseline → `models/v0` | Anisha / Akein | ✅ (CPU) | Val macro-F1 0.902 (CI 0.885–0.913), 4 ms/wafer; `models/v0-tta` 0.911 at 27 ms. **Trained on CPU**: AMD retrain pending a GPU. See `docs/results/OVERNIGHT.md` |
+| E0 baseline → `models/v0` | Anisha / Akein | ✅ (CPU) | Val macro-F1 0.902 (CI 0.885–0.913), 4 ms/wafer; `models/v0-tta` 0.911 at 27 ms; `models/v0-ens3` 0.912 at 9.5 ms. **Trained on CPU**: AMD retrain pending a GPU. See `docs/results/OVERNIGHT.md` |
 | E0b classical baseline | Claude | ✅ | Val macro-F1 0.865; CNN significantly better (+0.037) |
 | Tier 1 sweep + E-LEAK + E-COMB | Anisha / Akein | 🟡 | Single-seed CPU screening done (E-LEAK: no inflation; E1, E2, E3b: n.s.; TTA +0.009). Needs 5 seeds on an AMD GPU |
 | Freeze `models/v1` | Anisha / Akein | ❌ | |

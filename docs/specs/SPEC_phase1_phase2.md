@@ -630,6 +630,7 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | E1 result | Nearest (A) vs area-fraction (B): val macro-F1 0.906 vs 0.902, paired Δ +0.005 (CI −0.005 to +0.015, not significant); Scratch F1 identical (0.801). Keep B as default (no evidence against it; it protects the >64-die wafers in theory) | Median wafer is ~33×33 dies, so most maps are *upsampled* to 64 and nearest loses nothing. The scratch-erasure risk only applies to the large-wafer minority |
 | 14 Oct | Screening results | E3b rotation +0.007 (n.s.), E2 focal +0.001 (n.s.), **E5 TTA +0.009 (paired CI +0.005 to +0.014, significant)** at 27 ms/wafer CPU. v1 candidate: E0 (+ rotation if 5 seeds confirm) served with TTA | Single-seed CPU screening; confirm with 5 seeds on an AMD GPU |
 | 14 Oct | Seeds | E0 vs E3b with 3 seeds each (CPU): 0.9055 ± 0.0040 vs 0.9020 ± 0.0053, so rotation is dropped; seed-0's +0.007 was noise. Seed SD ≈ 0.004–0.005 macro-F1 | Multi-seed check before adopting a change (spec 6.2 selection rule) |
+| 14 Oct | E6 result | 3-seed E0 ensemble (`models/v0-ens3`, no TTA): val 0.912, +0.010 vs v0 (significant), ties v0-tta at 9.5 vs 27 ms/wafer. Leading v1 candidate | Ensembles beat TTA on latency for the same gain |
 | 14 Oct | Phase 2 impl | Noise-robustness slice flips pixels of the 64×64 encoding, not raw dies | Evaluation works from the npz; documented as pixel-level |
 | | | | |
 

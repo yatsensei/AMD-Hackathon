@@ -1,6 +1,6 @@
 # Overnight report — Wed 14 Oct 2026
 
-**TL;DR:** Phase 1 ran on the real WM-811K. A first CNN, `models/v0`, is trained, calibrated, evaluated on validation and committed: **val macro-F1 0.902 (95% CI 0.885–0.913), defect recall 0.95 at 0.96 precision, 4 ms/wafer on CPU.** Serving it with 8-way rotation/flip averaging (`models/v0-tta`) gives **0.911** at 27 ms/wafer. The CNN beats a strong classical baseline by a significant margin. Two spec assumptions turned out wrong on real data, and both are logged.
+**TL;DR:** Phase 1 ran on the real WM-811K. **Best model: `models/v0-ens3`, val macro-F1 0.912 at 9.5 ms/wafer.** A first CNN, `models/v0`, is trained, calibrated, evaluated on validation and committed: **val macro-F1 0.902 (95% CI 0.885–0.913), defect recall 0.95 at 0.96 precision, 4 ms/wafer on CPU.** Serving it with 8-way rotation/flip averaging (`models/v0-tta`) gives **0.911** at 27 ms/wafer. The CNN beats a strong classical baseline by a significant margin. Two spec assumptions turned out wrong on real data, and both are logged.
 
 > **Everything here was trained on CPU** (Claude's cloud environment, 4-core Xeon, bf16), because Token Factory has no GPU instances. **Do not say "trained on AMD" about these models.** All numbers are **validation**: calibration and thresholds were fitted on the same set, so they're slightly optimistic. The test split is still untouched.
 
@@ -28,6 +28,17 @@
 
 \* model forward pass only; v0's 4.0 ms is the full `classify()` call.
 
+### 2b. Ensemble (E6), added at the end of the night
+After the extra E0 seeds, I exported all three E0 seeds as one ensemble (`models/v0-ens3`, averaged probabilities, no TTA, no seed selection):
+
+| Model | Macro-F1 (95% CI) | CPU ms/wafer | Paired Δ vs it |
+|---|---|---|---|
+| **v0-ens3** (3 × E0) | **0.912** (0.896–0.922) | **9.5** | — |
+| v0 (1 × E0) | 0.902 | 4.0 | ens3 better by **+0.010 (+0.002 to +0.019), significant** |
+| v0-tta (1 × E0, TTA ×8) | 0.911 | 27.3 | +0.001 (−0.006 to +0.010), n.s. |
+
+**The ensemble matches TTA's accuracy at a third of the latency.** It's the best v1 candidate so far. (Ensemble + TTA would be about 80 ms, over budget.)
+
 **v0 in detail** (`docs/results/v0_val/`, with confusion matrix, reliability, coverage-risk and error-gallery PNGs):
 - Per-class F1: Edge-Ring 0.98 · Near-full 0.97 · Center 0.95 · Donut 0.88 · Random 0.88 · Edge-Loc 0.87 · Scratch 0.80 · Loc 0.79 · none 0.99.
 - **Main error: missed defects, not mixed-up patterns.** Scratch is called `none` 14% of the time, Loc 10%, Edge-Loc 9%. Confusable pairs are rare (Edge-Loc↔Loc 3%).
@@ -48,7 +59,7 @@ All of this is in the spec's Decisions Log.
 
 ## 4. What I'd do next
 - **Get an AMD GPU** (AMD Developer Cloud credits, or a teammate's Radeon). Then run `notebooks/amd_e0.ipynb` or `scripts/amd/run_e0.sh`: 5 seeds of E0, plus E3b with 5 seeds, in parallel, in minutes. That gives the honest "trained on AMD" claim and turns the single-seed hints into real comparisons.
-- **v1 candidate:** plain E0 served with TTA (27 ms, inside budget), or an ensemble (see §2b). Rotation is out. Freeze it, then run the **one** final test evaluation: `python -m wafer.evaluate --final --model models/v1 --comparators models/v0 experiments/e0b/predictions.csv`. (Regenerate the E0b CSV first, since `experiments/` isn't in git.)
+- **v1 candidate: `models/v0-ens3`** (3 × E0, 0.912, 9.5 ms), retrained on the AMD GPU with the same recipe (5 seeds → pick 3–5 members). Rotation is out; TTA is an alternative at 27 ms. Freeze it, then run the **one** final test evaluation: `python -m wafer.evaluate --final --model models/v1 --comparators models/v0 experiments/e0b/predictions.csv`. (Regenerate the E0b CSV first, since `experiments/` isn't in git.)
 - **Small-wafer weakness:** the smallest quartile is the biggest gap. Worth one experiment (e.g. aux die-count feature E8, or 96 px).
 
 ## 5. For the agent and dashboard teammates
@@ -57,7 +68,7 @@ All of this is in the spec's Decisions Log.
 from wafer.infer import classify, explain        # picks models/v1 if present, else models/v0
 classify(wafer_map)   # {"pattern", "confidence", "probs", "top2", "defect_prob", "needs_review", "review_reasons", "model_version"}
 ```
-Or `WAFER_MODEL_DIR=models/v0-tta` for the TTA version. Same API as `wafer/infer_mock.py`.
+Or `WAFER_MODEL_DIR=models/v0-ens3` for the best model so far (0.912, 9.5 ms), or `models/v0-tta`. Same API as `wafer/infer_mock.py`.
 
 ## 6. How to reproduce
 ```bash
