@@ -1,6 +1,7 @@
 """Evaluate a model folder (spec Section 7). Validation by default; test only with --final.
 
     python -m wafer.evaluate --model models/v0                         # -> docs/results/v0_val/
+    python -m wafer.evaluate --predictions experiments/e0b/predictions.csv   # any model's probabilities
     python -m wafer.evaluate --final --model models/v1 \\
            --comparators models/v0 [other model folders]                # -> docs/results/final/ (ONCE)
 
@@ -57,6 +58,50 @@ class Scored:
         self.groups = (self.meta["split_group"] if "split_group" in self.meta else self.meta["lotName"]).to_numpy()
 
 
+class ScoredCSV:
+    """A predictions CSV (uid, prob_<class>...) scored like a model (spec 9.5): the same 7.4
+    calibration is fitted on its own val rows. A `<name>.prior.json` sidecar with pi_natural and
+    pi_train_eff enables the prior correction; without it that step is skipped."""
+
+    members = None
+    tta = False
+
+    def __init__(self, csv: Path, data_dir: Path, split: str, device: str):
+        self.dir = csv
+        df = pd.read_csv(csv).set_index("uid")
+        cols = [f"prob_{c}" for c in CLASSES]
+        missing = set(cols) - set(df.columns)
+        if missing:
+            raise ValueError(f"{csv} lacks columns {sorted(missing)}")
+        npz = data_dir / "wafers_s64.npz"
+        if not npz.exists():                                   # any resolution will do: only labels/gallery
+            npz = sorted(data_dir.glob("wafers_s*.npz"))[0]
+        self.data = WaferData(npz, data_dir / "metadata.parquet", encoding="area", device=device)
+        prior = csv.with_suffix(".prior.json")
+        uni = [1 / len(CLASSES)] * len(CLASSES)
+        pr = json.loads(prior.read_text()) if prior.exists() else {"pi_natural": uni, "pi_train_eff": uni}
+
+        def z_of(idx):
+            uids = self.data.uid[idx]
+            if not np.isin(uids, df.index).all():
+                raise ValueError(f"{csv} is missing predictions for some {split!r}/val rows")
+            P = df.loc[uids, cols].to_numpy(dtype=np.float64)
+            return np.log(np.clip(P / P.sum(1, keepdims=True), 1e-12, 1.0))
+
+        va = self.data.indices("val")
+        self.cal = calibrate.calibrate(z_of(va), self.data.y_np[va], pr["pi_natural"], pr["pi_train_eff"])
+        self.idx = self.data.indices(split)
+        self.P = calibrate.apply(self.cal, z_of(self.idx))
+        self.d = calibrate.decide(self.cal, self.P)
+        self.y = self.data.y_np[self.idx]
+        self.meta = self.data.meta.iloc[self.idx].reset_index(drop=True)
+        self.groups = (self.meta["split_group"] if "split_group" in self.meta else self.meta["lotName"]).to_numpy()
+
+
+def load_scored(path: Path, data_dir: Path, split: str, device: str):
+    return ScoredCSV(path, data_dir, split, device) if path.suffix == ".csv" else Scored(path, data_dir, split, device)
+
+
 @torch.no_grad()
 def _member_preds(s: Scored, transform) -> np.ndarray:
     """Decisions after applying `transform` to each base batch (members combined, calibrated)."""
@@ -92,6 +137,8 @@ def slices(s: Scored) -> pd.DataFrame:
     add("waferIndex", "1-12", (wi >= 1) & (wi <= 12))
     add("waferIndex", "13-25", wi >= 13)
 
+    if s.members is None:                    # predictions CSV: no model to re-run under transforms
+        return pd.DataFrame(rows)
     preds = [_member_preds(s, lambda b, t=t: apply_d4(b, t)) for t in range(8)]
     consistent = np.all([p == preds[0] for p in preds], axis=0)
     rows.append({"slice": "d4_consistency", "bin": "all 8 agree", "n": len(pred),
@@ -213,20 +260,22 @@ def run(model_dir: Path, data_dir: Path, final: bool, comparators: list[Path], o
         out = FINAL_DIR
         if (out / "metrics.json").exists():
             raise SystemExit(f"{out}/metrics.json exists: the test split has already been scored once (Rule 0.1).")
-    out = out or REPO_ROOT / "docs" / "results" / f"{model_dir.name}_{split}"
+    name = model_dir.parent.name if model_dir.suffix == ".csv" else model_dir.name
+    out = out or REPO_ROOT / "docs" / "results" / f"{name}_{split}"
     out.mkdir(parents=True, exist_ok=True)
-    s = Scored(model_dir, data_dir, split, device)
+    s = load_scored(model_dir, data_dir, split, device)
     res = metrics.evaluate_predictions(s.y, s.P, s.d, groups=s.groups, n_boot=n_boot)
-    res.update({"model": str(model_dir), "split": split, "env": env_info(),
+    res.update({"model": str(model_dir), "split": split, "env": env_info(), "calibration": s.cal,
                 "note": "validation (calibrated on this set: optimistic)" if not final else "test, scored once"})
-    res["sanity_inputs"] = sanity(model_dir)
+    if s.members is not None:
+        res["sanity_inputs"] = sanity(model_dir)
     sl = slices(s)
     sl.to_csv(out / "slices.csv", index=False)
     pd.DataFrame(res["per_class"]).to_csv(out / "per_class.csv", index=False)
 
     comps = {}
     for c in comparators:
-        sc = Scored(c, data_dir, split, device)
+        sc = load_scored(c, data_dir, split, device)
         if not np.array_equal(sc.idx, s.idx):
             raise ValueError(f"{c} scored different rows")
         a_pred, b_pred = s.d["pred"], sc.d["pred"]
@@ -252,16 +301,18 @@ def run(model_dir: Path, data_dir: Path, final: bool, comparators: list[Path], o
 def main(argv=None) -> Path:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--model", required=True, help="model folder, e.g. models/v0")
+    src = p.add_mutually_exclusive_group(required=True)
+    src.add_argument("--model", help="model folder, e.g. models/v0")
+    src.add_argument("--predictions", help="predictions CSV (uid, prob_<class>...) for val + test rows")
     p.add_argument("--final", action="store_true", help="score the TEST split (once, ever)")
-    p.add_argument("--comparators", nargs="*", default=[], help="model folders to compare against")
+    p.add_argument("--comparators", nargs="*", default=[], help="model folders or predictions CSVs to compare against")
     p.add_argument("--data-dir", default="data/processed")
     p.add_argument("--out", default=None)
     p.add_argument("--n-boot", type=int, default=1000)
     p.add_argument("--device", default=None)
     a = p.parse_args(argv)
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
-    return run(Path(a.model), Path(a.data_dir), a.final, [Path(c) for c in a.comparators],
+    return run(Path(a.model or a.predictions), Path(a.data_dir), a.final, [Path(c) for c in a.comparators],
                Path(a.out) if a.out else None, device, a.n_boot)
 
 

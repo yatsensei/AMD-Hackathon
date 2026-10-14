@@ -186,3 +186,27 @@ def test_module_level_functions_use_default_model(trained, monkeypatch):
     _check_result(inf.classify(m))
     assert inf.classify(m)["model_version"] == "vtest"
     assert Path(inf.default_model_dir()) == trained[1]
+
+
+def test_evaluate_predictions_csv(trained, clf, tmp_path):
+    """A predictions CSV (e.g. YOLO or E0b) is scored with the same code; identical
+    probabilities to the model give an identical macro-F1."""
+    import pandas as pd
+    from wafer import evaluate
+    data_dir, model_dir, _ = trained
+    data = WaferData(data_dir / "wafers_s32.npz", data_dir / "metadata.parquet", encoding="area")
+    rows = np.flatnonzero(data.meta["split"].to_numpy() != "train")
+    z = calibrate.combine_members([predict_rows(m, data, rows) for m in clf.members], tta=False)
+    P = calibrate.softmax(z)
+    df = pd.DataFrame(P, columns=[f"prob_{c}" for c in CLASSES])
+    df.insert(0, "uid", data.uid[rows])
+    csv = tmp_path / "preds" / "predictions.csv"
+    csv.parent.mkdir()
+    df.to_csv(csv, index=False)
+    prior = json.loads((trained[2] / "train_prior.json").read_text())
+    csv.with_suffix(".prior.json").write_text(json.dumps({k: prior[k] for k in ("pi_natural", "pi_train_eff")}))
+    out = evaluate.run(csv, data_dir, final=False, comparators=[model_dir], out=tmp_path / "csv_val",
+                       device="cpu", n_boot=20)
+    res = json.loads((out / "metrics.json").read_text())
+    assert abs(res["macro_f1"] - res["comparators"][str(model_dir)]["macro_f1"]) < 1e-9
+    assert "sanity_inputs" not in res and (out / "confusion_norm.png").exists()

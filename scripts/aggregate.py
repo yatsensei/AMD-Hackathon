@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pandas as pd
 
-COLS = ["run_id", "experiment", "config", "model", "encoding", "loss", "sampler", "aug", "seed", "val_macro_f1",
+COLS = ["run_id", "experiment", "config", "model", "encoding", "loss", "sampler", "aug", "split_protocol", "seed",
+        "val_macro_f1",
         "val_defect_macro_f1", "val_bal_acc", "val_defect_recall", "val_defect_precision",
         "val_macro_f1_argmax_raw", "val_ece_defect", "val_review_rate", "cpu_ms", "epochs", "train_minutes",
         "gpu", "git_commit", "dirty"]

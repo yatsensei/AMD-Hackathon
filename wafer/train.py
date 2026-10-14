@@ -44,7 +44,7 @@ DEFAULTS = {
     "none_per_epoch": 15000, "aug": {"d4": True, "small_rot": False, "die_flip": 0.0},
     "optim": {"lr": 1.0e-3, "wd": 1.0e-4, "epochs": 30, "batch_size": 256, "warmup_epochs": 1},
     "seeds": [0], "aux_features": False, "amp": True, "cpu_bf16": False, "channels_last": False,
-    "compile": False, "eval_every": 1,
+    "compile": False, "eval_every": 1, "split_protocol": "lot",
     "recall_target": calibrate.DEFAULT_RECALL_TARGET, "sel_acc_target": calibrate.DEFAULT_SEL_ACC_TARGET,
 }
 
@@ -75,6 +75,25 @@ def lr_lambda(warmup_steps: int, total_steps: int):
         progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
         return 0.5 * (1.0 + math.cos(math.pi * min(1.0, progress)))
     return f
+
+
+def split_indices(data, protocol: str) -> tuple[np.ndarray, np.ndarray]:
+    """(train, val) row indices. Test rows are never touched.
+
+    lot          : the project's lot-grouped split (spec 3.7).
+    wafer_random : E-LEAK only. Pool train+val and re-split them at random by wafer, stratified by
+                   label, with the same val size: the protocol most published WM-811K results use.
+                   Comparing its val score with the lot-grouped one measures the leakage inflation.
+    """
+    tr, va = data.indices("train"), data.indices("val")
+    if protocol == "lot":
+        return tr, va
+    if protocol != "wafer_random":
+        raise ValueError(f"unknown split_protocol {protocol!r}; options: lot, wafer_random")
+    from sklearn.model_selection import train_test_split
+    pool = np.concatenate([tr, va])
+    new_tr, new_va = train_test_split(pool, test_size=len(va), stratify=data.y_np[pool], random_state=12345)
+    return np.sort(new_tr), np.sort(new_va)
 
 
 def cpu_latency_ms(model, cfg: dict, n: int = 50, warmup: int = 10, threads: int = 4) -> float:
@@ -116,7 +135,7 @@ def train_one(cfg: dict, seed: int, data_dir: Path, out_root: Path, device: str,
 
     data = WaferData(data_dir / f"wafers_s{cfg['size']}.npz", data_dir / "metadata.parquet",
                      encoding=cfg["encoding"], device=device, aux=cfg["aux_features"])
-    tr, va = data.indices("train"), data.indices("val")
+    tr, va = split_indices(data, cfg.get("split_protocol", "lot"))
     y_tr = data.y_np[tr]
     counts = sampler.class_counts(y_tr)
     w = sampler.class_weights(counts, cfg["loss"])
@@ -208,6 +227,7 @@ def train_one(cfg: dict, seed: int, data_dir: Path, out_root: Path, device: str,
     summary = {
         "run_id": run_id, "experiment": cfg.get("experiment", ""), "config": cfg["config_name"],
         "model": cfg["model"], "encoding": cfg["encoding"], "loss": cfg["loss"], "sampler": cfg["sampler"],
+        "split_protocol": cfg.get("split_protocol", "lot"),
         "aug": f"d4={int(aug.get('d4', True))},rot={int(aug.get('small_rot', False))},flip={aug.get('die_flip', 0)}",
         "seed": seed, "val_macro_f1": val["macro_f1"], "val_defect_macro_f1": val["defect_macro_f1"],
         "val_bal_acc": val["balanced_accuracy"], "val_defect_recall": val["defect_recall"],

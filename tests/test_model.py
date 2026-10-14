@@ -134,3 +134,17 @@ def test_epoch_indices_downsample_none_and_keep_all_defects():
     idx = np.arange(105)
     out = sampler.epoch_indices(idx, y, "none_downsample", 20, np.random.default_rng(0))
     assert len(out) == 25 and set(range(5)) <= set(out) and len(set(out)) == 25
+
+
+def test_classical_features_are_d4_invariant():
+    from tests.synthetic import draw_pattern
+    from wafer.data import preprocess
+    from wafer.features import wafer_features
+    rng = np.random.default_rng(0)
+    m = draw_pattern("Edge-Loc", 60, 60, rng)
+    x = preprocess.area_to_uint8(preprocess.encode_area(m, 64))
+    f0 = wafer_features(x)
+    for t in range(1, 8):
+        xt = augment.apply_d4(torch.from_numpy(x), t).numpy()
+        assert np.allclose(wafer_features(np.ascontiguousarray(xt)), f0, atol=0.05)
+    assert f0.shape == (31,) and np.isfinite(f0).all()
