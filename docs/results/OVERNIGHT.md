@@ -41,14 +41,14 @@
 1. **The CNN is worth it:** +0.037 macro-F1 over the classical baseline, significant. The biggest gains are on Loc, Scratch and Edge-Loc, the shape-based patterns.
 2. **E-LEAK: no measurable leakage inflation** (0.9018 random vs 0.9016 lot-grouped). The spec expected random splits to inflate scores; on this data they don't. **Pitch consequence:** drop "lot grouping is worth L points". Say instead: "we tested for lot leakage: the score holds under both protocols." Lot grouping stays, since it's the right protocol and costs nothing.
 3. **E1: the encoding doesn't matter on real data.** Nearest and area-fraction tie, and Scratch F1 is identical. The median wafer is only ~33×33 dies, so most maps are *upsampled* to 64×64, and nearest loses nothing when upsampling. Area-fraction stays the default because it protects the minority of large wafers.
-4. **E3b (rotation) is the most promising change** (+0.007) but not significant on one seed. **E2 (focal loss) does nothing.**
+4. **E3b (rotation) does not help.** It looked like the best change on seed 0 (+0.007), so I ran 2 more seeds of both configs: **E0 0.9055 ± 0.0040 vs E3b 0.9020 ± 0.0053** (3 seeds each); on seeds 1 and 2 rotation was slightly worse. Single-seed differences under ~0.01 are noise here, which is exactly why the spec asks for 5 seeds. **E2 (focal loss) does nothing.**
 5. **TTA gives a significant +0.009** (paired CI +0.005 to +0.014; McNemar p = 0.0004) for 7× the latency (27 ms), still within the 50 ms budget. It's the one change so far that's clearly worth shipping.
 
 All of this is in the spec's Decisions Log.
 
 ## 4. What I'd do next
 - **Get an AMD GPU** (AMD Developer Cloud credits, or a teammate's Radeon). Then run `notebooks/amd_e0.ipynb` or `scripts/amd/run_e0.sh`: 5 seeds of E0, plus E3b with 5 seeds, in parallel, in minutes. That gives the honest "trained on AMD" claim and turns the single-seed hints into real comparisons.
-- **v1 candidate:** E0 + small rotation (if 5 seeds confirm it) served with TTA (27 ms, inside budget). Freeze it, then run the **one** final test evaluation: `python -m wafer.evaluate --final --model models/v1 --comparators models/v0 experiments/e0b/predictions.csv`. (Regenerate the E0b CSV first, since `experiments/` isn't in git.)
+- **v1 candidate:** plain E0 served with TTA (27 ms, inside budget), or an ensemble (see §2b). Rotation is out. Freeze it, then run the **one** final test evaluation: `python -m wafer.evaluate --final --model models/v1 --comparators models/v0 experiments/e0b/predictions.csv`. (Regenerate the E0b CSV first, since `experiments/` isn't in git.)
 - **Small-wafer weakness:** the smallest quartile is the biggest gap. Worth one experiment (e.g. aux die-count feature E8, or 96 px).
 
 ## 5. For the agent and dashboard teammates
