@@ -621,6 +621,7 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | Phase 2 impl | Module-level `classify()` default: `$WAFER_MODEL_DIR`, else `models/v1`, else `models/v0` | Phases 5/6 work as soon as v0 exists |
 | 14 Oct | Phase 2 impl | `infer_mock` returns heuristic (geometry-rule) outputs, not fixed ones | Lets the dashboard/agent exercise varied patterns and `needs_review` paths |
 | 14 Oct | Phase 2 impl | Operating point can only *add* defect calls to argmax (`none` needs top class AND `p(none) ≥ θ`); θ = 0 when argmax already meets the recall target | Synthetic run: "smallest θ meeting 95%" lowered recall from 100% to 95% and macro-F1 from 1.000 to 0.977 |
+| 14 Oct | Phase 2 impl | GPU may be AMD Radeon (Token Factory = Radeon Cloud), not MI300X. Code is GPU-agnostic on ROCm; every "MI300X" in this spec means "the AMD GPU in `env_amd.json`" | Pitch claims must match the recorded hardware |
 | 14 Oct | Phase 2 impl | Noise-robustness slice flips pixels of the 64×64 encoding, not raw dies | Evaluation works from the npz; documented as pixel-level |
 | | | | |
 

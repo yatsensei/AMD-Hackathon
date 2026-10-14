@@ -190,4 +190,4 @@ Prize: AirPods 5 for every team member, for the best solution. Judged on three c
 |---|---|---|
 | 14 Oct | brief | Created from the event page. Prize pool now shows $17,000+ (was $12,000+). New FAQ: event hosted on notebooks.amd.com/tokenfactory, no billing, $100 credit not required |
 | 14 Oct | team | Track 1 chosen; Evolus partner track skipped |
-| | | Token factory: what it provides and whether the agent uses it instead of self-hosted vLLM — **to confirm** |
+| 14 Oct | team | Token Factory confirmed: (1) one shared team key `rc-...` for free OpenAI/Anthropic-compatible LLM endpoints on AMD GPUs (30 RPM, 8 concurrent, daily cap, team-wide); the agent can use these instead of self-hosting vLLM; (2) paid-by-credits GPU instances (shell/notebook) for CNN training. Platform is AMD **Radeon** Cloud: claim the GPU named in `docs/results/env_amd.json`, not MI300X by default |

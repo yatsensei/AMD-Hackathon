@@ -8,20 +8,25 @@ There are two ways in, depending on what the AMD access gives you:
 
 ---
 
+## What Token Factory gives us (from its docs, 14 Oct)
+- **A shared team API key** (`rc-...`) for free LLM endpoints (DeepSeek, Qwen, GLM, Gemma…) at `https://developer.amd.com.cn/radeon/api/v1`. It's for the **agent** teammates, not the CNN. Hand it over privately and keep it in an env var (`RADEON_API_KEY`, see `.env.example`). Never commit it or paste it into chat, a notebook output or a screenshot. All 5 of us share one key: 30 requests/min and 8 concurrent, team-wide.
+- **GPU instances (shell or notebook)** for anything the catalog doesn't offer, like training our CNN. These are paid with **credits**, so check your balance and **stop the instance when you're done** (`DELETE /api/notebook/current` or the stop button). This is where the steps below run.
+- The service is **AMD Radeon Cloud**, so the GPU may be a Radeon card rather than an Instinct MI300X. The code runs on either (ROCm + PyTorch). The pitch must name **whatever `docs/results/env_amd.json` records**, not "MI300X" by default.
+
 ## 0. Before you start (once, ~10 min)
 1. **Kaggle API token.** Go to kaggle.com → *Settings* → *API* → *Create New Token*. You get `kaggle.json` with a username and key. Keep it private: never paste it into chat, a notebook output, or git.
 2. **Accept the dataset.** Open https://www.kaggle.com/datasets/qingyi/wm811k-wafer-map while logged in, so the API is allowed to download it.
 3. **Repo access from the AMD machine.** The notebook clones `https://github.com/yatsensei/AMD-Hackathon`. The submission needs a public repo anyway, so making it public now is simplest. If it stays private, you need a GitHub token with read access (and write access if you want to push results from the AMD side).
-4. **AMD access.** Log in to the AMD notebook/cloud with your AMD AI Developer Program account and find out what you get. Post the answers in team chat (brief §4.2):
+4. **AMD access.** At notebooks.amd.com/tokenfactory every team member must sign in and click *Redeem API Key* (the key appears only after all 5 have). Then find the **instance / notebook** option (templates list) and check your credits. Post the answers in team chat (brief §4.2):
    - Is there a GPU? Which one?
    - Is there a terminal (JupyterLab *File → New → Terminal*)?
    - Does disk persist between sessions?
    - Can it reach the internet (github.com, kaggle.com, pypi.org)?
 
 ## A. Jupyter notebook path (most likely)
-1. Open JupyterLab on the AMD notebook service and choose a **PyTorch / ROCm** image or kernel if you're offered one.
+1. In Token Factory, launch a **notebook instance** with a **PyTorch / ROCm** template (pick the one with a GPU). Open its JupyterLab.
 2. Upload `notebooks/amd_e0.ipynb` from this repo, or open a terminal and `git clone` the repo, then open the notebook from there.
-3. **Run cell 1 (GPU check).** You must see `hip: <version>` (not `None`) and a device name like `AMD Instinct MI300X`. If `hip` is `None`, you're on a CPU or NVIDIA build: switch to the ROCm image/kernel. **Never** `pip install torch` from PyPI there, because that installs the CUDA build.
+3. **Run cell 1 (GPU check).** You must see `hip: <version>` (not `None`) and an AMD device name (Instinct or Radeon). Note which one. If `hip` is `None`, you're on a CPU or NVIDIA build: switch to the ROCm image/kernel. **Never** `pip install torch` from PyPI there, because that installs the CUDA build.
 4. **Run cells 2–3.** They get the code, install dependencies (torch is left alone), and check the GPU, including a convolution through MIOpen. Cell 3 must end with `PASS`.
 5. **Run cell 4.** Type your Kaggle username and key. They stay in memory only.
 6. **Run cell 5** (about 5–10 min, CPU). Downloads `LSWMD.pkl` (about 2 GB) and builds the dataset. Read the data report it prints, and check three things:
@@ -43,6 +48,8 @@ scripts/amd/bootstrap.sh                      # deps + GPU check (must print PAS
 tmux new -s e0 'scripts/amd/run_e0.sh'        # data -> 5 training runs -> models/v0 -> val report
 ```
 If your instance already has ROCm PyTorch installed without Docker, skip `start_container.sh` and run `bootstrap.sh` directly. It refuses to continue if torch has no ROCm support.
+
+**When finished: stop the instance** so it stops using credits.
 
 ## What to send back
 Either `results_bundle.tar.gz`, or a push containing:
