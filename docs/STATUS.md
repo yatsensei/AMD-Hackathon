@@ -20,12 +20,15 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 ## Phase 2 — classifier (Anisha & Akein)
 | Item | Owner | Status | Notes |
 |---|---|---|---|
-| `scripts/check_gpu.py` on MI300X | Anisha / Akein | ❌ | |
-| `wafer/infer_mock.py` (Thu 12:00) | Anisha / Akein | ❌ | |
-| E0 baseline → `models/v0` (Thu 18:00) | Anisha / Akein | ❌ | |
-| E0b classical baseline (Thu 22:00) | anyone free | ❌ | |
-| Tier 1 sweep + E-LEAK + E-COMB (Fri) | Anisha / Akein | ❌ | |
-| Freeze `models/v1` (Fri 21:00) | Anisha / Akein | ❌ | |
-| Final test evaluation, once (Sat 10:00) | Anisha / Akein | ❌ | |
-| `wafer/infer.py` contract (9.1) | Anisha / Akein | ❌ | |
+| AMD container + bootstrap + `scripts/check_gpu.py` | Anisha / Akein | 🟡 | Scripts written; not yet run on the MI300X. Commit `docs/results/env_amd.json` when it passes |
+| `wafer/infer_mock.py` | Anisha / Akein | ✅ | Same signatures and keys as `wafer.infer`; heuristic outputs |
+| Training core (GPU-resident data, augmentation, sampler, models, losses, `train.py`) | Anisha / Akein | 🟡 | Code + tests ✅ on CPU/synthetic · first MI300X run ❌ |
+| Calibration, operating point, abstention (`calibrate.py`, `decision.py`) | Anisha / Akein | ✅ | Tested on toy data |
+| `metrics.py`, `evaluate.py` (val; `--final` once) | Anisha / Akein | 🟡 | Done except `--predictions` CSV for YOLO/E0b comparators |
+| `wafer/infer.py` + `wafer/explain.py` + `wafer/export.py` | Anisha / Akein | 🟡 | Code + tests ✅ (train/serve parity) · no real model yet |
+| E0 baseline → `models/v0` | Anisha / Akein | ❌ | `scripts/amd/run_e0.sh` on the MI300X |
+| E0b classical baseline | anyone free | ❌ | |
+| Tier 1 sweep + E-LEAK + E-COMB | Anisha / Akein | ❌ | Configs not written yet |
+| Freeze `models/v1` | Anisha / Akein | ❌ | |
+| Final test evaluation, once | Anisha / Akein | ❌ | |
 | Tier 2 (E9, E10, E11, E8, E4, E7) | Anisha / Akein | ❌ | |

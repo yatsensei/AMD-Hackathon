@@ -16,3 +16,6 @@ venv/
 # Secrets
 .env
 kaggle.json
+
+# MIOpen kernel cache (wafer/env.py)
+.miopen/

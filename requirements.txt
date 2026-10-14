@@ -11,4 +11,6 @@ pillow>=10
 matplotlib>=3.7
 tqdm>=4.65
 pytest>=7.4
+safetensors>=0.4
+# torch / torchvision: NOT here. Use the ROCm build on the AMD box (scripts/amd/), the CPU wheel elsewhere.
 # download only: kaggle

@@ -1,0 +1,14 @@
+# E0 baseline (spec 6.1). 60 epochs only for E0, to read the val curve and fix the default
+# epoch count for every later config (spec 5.6). No early stopping: final checkpoint.
+experiment: E0
+model: small_cnn
+encoding: area
+size: 64
+loss: weighted_ce
+sampler: none_downsample
+none_per_epoch: 15000
+aug: {d4: true, small_rot: false, die_flip: 0.0}
+optim: {lr: 1.0e-3, wd: 1.0e-4, epochs: 60, batch_size: 256, warmup_epochs: 1}
+seeds: [0, 1, 2, 3, 4]
+aux_features: false
+amp: true

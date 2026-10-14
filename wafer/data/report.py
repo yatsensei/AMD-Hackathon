@@ -4,7 +4,6 @@ from __future__ import annotations
 import datetime as dt
 import platform
 import re
-import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -32,14 +31,9 @@ def _versions() -> str:
 
 
 def _git_commit() -> str:
-    try:
-        out = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
-                             text=True, check=True, timeout=10).stdout.strip()
-        dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True,
-                               text=True, timeout=10).stdout.strip()
-        return out + (" (dirty)" if dirty else "")
-    except Exception:
-        return "unknown"
+    from wafer.env import git_commit
+    commit, dirty = git_commit()
+    return commit + (" (dirty)" if dirty else "")
 
 
 def _md_table(df: pd.DataFrame, index: bool = True) -> str:

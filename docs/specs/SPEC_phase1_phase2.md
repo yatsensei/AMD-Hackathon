@@ -258,7 +258,7 @@ x = torch.randn(4096, 4096, device="cuda"); print((x @ x).sum().item())
 - In code, always use `device = "cuda" if torch.cuda.is_available() else "cpu"`. On ROCm, `"cuda"` means the AMD GPU. **Never** call CUDA-only libraries (e.g. NVIDIA-specific kernels or `nvidia-smi` in scripts). Use `rocm-smi` to monitor the GPU.
 - Environment: `export MIOPEN_FIND_MODE=FAST` (avoids slow first epochs while MIOpen searches for kernels) and `export MIOPEN_USER_DB_PATH=/workspace/.miopen` (a writable cache inside Docker).
 - `torch.autocast("cuda", dtype=torch.bfloat16)` for mixed precision; if bf16 causes problems, fall back to fp32 and log it. `torch.compile` is optional. Switch it off at the first error; it isn't worth debugging this week.
-- Extra packages: `torch torchvision scikit-learn matplotlib pyyaml pandas tqdm safetensors` (+ `statsmodels` for the secondary McNemar).
+- Extra packages: `torch torchvision scikit-learn matplotlib pyyaml pandas tqdm safetensors` (McNemar uses `scipy`, which scikit-learn already installs). One-command setup: `scripts/amd/start_container.sh` then `scripts/amd/bootstrap.sh`.
 - Record in the Decisions Log: ROCm version, PyTorch version, GPU name. The pitch says "trained on AMD Instinct MI300X with ROCm", and that must be true.
 
 ### 4.2 Data on the GPU
@@ -440,7 +440,7 @@ All fitted on **val**, saved to `models/<version>/calibration.json`.
 1. **Ensemble/TTA combine:** average member (and TTA) **probabilities**, then `z = log(p_avg)`. A single model uses `z = logits`.
 2. **Prior correction (exact, no fitting):** `z' = z + log π_natural − log π_train_eff`, with `π_natural` = train-split class frequencies and `π_train_eff` from `train_prior.json` (averaged over members). This undoes the rebalancing so probabilities refer to a real fab's class mix. **Temperature scaling alone can't do this**, because it never changes the argmax.
 3. **Temperature:** fit a single `T` on `z'` by minimising val NLL (LBFGS). `p = softmax(z' / T)`. These are the probabilities the API returns.
-4. **Operating point (defect vs none):** decision: if `p(none) ≥ θ_none` → `none`; else → argmax over the 8 defect classes. Defect recall rises as `θ_none` rises, so pick the **smallest** `θ_none` whose val defect recall ≥ `R_target` (default 0.95, the hand-off target; it's a product decision, so raise it to 0.98 if the team prefers fewer misses over fewer false alarms). Log the precision this gives, and report macro-F1 both at this operating point and at plain argmax.
+4. **Operating point (defect vs none):** decision: `none` only if `none` is the top class **and** `p(none) ≥ θ_none`; otherwise argmax over the 8 defect classes. `θ_none = 0` is plain argmax, and raising it only turns argmax-`none` wafers into defect calls. Pick the **smallest** `θ_none` whose val defect recall ≥ `R_target` (default 0.95, the hand-off target; a product decision, so raise it to 0.98 if the team prefers fewer misses over fewer false alarms). If argmax already meets the target, `θ_none = 0`: the rule never gives away recall the model already has. Log the precision this gives, and report macro-F1 both at this operating point and at plain argmax.
 5. **Abstention:** `τ` = the smallest value such that, on val wafers **predicted as a defect**, those with `confidence ≥ τ` reach selective accuracy ≥ 0.95. Log the coverage and the per-class review rates.
 6. **Rule:** `needs_review = True` if any of:
    - `confidence < τ` → reason `"low_confidence"`
@@ -613,6 +613,15 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | Phase 1 impl | Labelled rows that aren't 2D, have values outside {0,1,2}, or have no dies are dropped and counted in the report | `infer` rejects such maps anyway (9.1); keeping them would poison training |
 | 14 Oct | Phase 1 impl | `requirements.txt` uses bounded versions; exact versions recorded in the data report | Exact pins can't install on both Python 3.10 (ROCm image) and 3.13 |
 | 14 Oct | Phase 1 impl | Split search runs in a `spawn` process pool | Forking a process that already runs BLAS threads can deadlock |
+| 14 Oct | Phase 2 impl | AMD workflow = `scripts/amd/{start_container,bootstrap,run_e0}.sh`; results come back to the repo as committed `docs/results/` + `models/vN/` | All training/eval must run on the AMD cloud; the code is written and tested on CPU elsewhere |
+| 14 Oct | Phase 2 impl | MIOpen env defaults (`MIOPEN_FIND_MODE=FAST`, repo-local `MIOPEN_USER_DB_PATH`) are set in code (`wafer/env.py`) | Nobody has to remember to export them |
+| 14 Oct | Phase 2 impl | E8 aux scalars use `log(n_die)`, log aspect ratio and fail fraction, all computed from the map, instead of `log(dieSize)` | `classify()` only receives the map; train/serve parity |
+| 14 Oct | Phase 2 impl | `cam_layer` is a property, not a registered submodule | Registering it duplicated weights in the state dict (safetensors refuses to save) |
+| 14 Oct | Phase 2 impl | `models/v0` = the E0 seed with the best val macro-F1; export recomputes val outputs exactly as served before fitting calibration | v0 is an integration build; recomputing guarantees calibration matches serving (incl. TTA) |
+| 14 Oct | Phase 2 impl | Module-level `classify()` default: `$WAFER_MODEL_DIR`, else `models/v1`, else `models/v0` | Phases 5/6 work as soon as v0 exists |
+| 14 Oct | Phase 2 impl | `infer_mock` returns heuristic (geometry-rule) outputs, not fixed ones | Lets the dashboard/agent exercise varied patterns and `needs_review` paths |
+| 14 Oct | Phase 2 impl | Operating point can only *add* defect calls to argmax (`none` needs top class AND `p(none) ≥ θ`); θ = 0 when argmax already meets the recall target | Synthetic run: "smallest θ meeting 95%" lowered recall from 100% to 95% and macro-F1 from 1.000 to 0.977 |
+| 14 Oct | Phase 2 impl | Noise-robustness slice flips pixels of the 64×64 encoding, not raw dies | Evaluation works from the npz; documented as pixel-level |
 | | | | |
 
 ---

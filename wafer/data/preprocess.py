@@ -115,6 +115,22 @@ def _check_map(m) -> np.ndarray:
     return a
 
 
+def validate_map(m) -> np.ndarray:
+    """Strict check used at serving time (spec 9.1): 2D, integer values in {0,1,2}, >= 1 die.
+    Returns the map as contiguous uint8; raises ValueError with a clear message otherwise."""
+    a = np.asarray(m)
+    if a.dtype == object or not (np.issubdtype(a.dtype, np.integer) or np.issubdtype(a.dtype, np.floating)
+                                 or a.dtype == bool):
+        raise ValueError(f"wafer map must be numeric, got dtype {a.dtype}")
+    a = _check_map(a)
+    if not np.all((a == 0) | (a == 1) | (a == 2)):
+        bad = np.unique(a[(a != 0) & (a != 1) & (a != 2)])[:5]
+        raise ValueError(f"wafer map values must be 0 (no die), 1 (pass) or 2 (fail); found {bad.tolist()}")
+    if not np.any(a > 0):
+        raise ValueError("wafer map has no dies (all zeros)")
+    return np.ascontiguousarray(a, dtype=np.uint8)
+
+
 def encode_area(m, size: int = DEFAULT_SIZE) -> np.ndarray:
     """Encoding B: (2, S, S) float32 = [wafer_frac, fail_frac], each in [0, 1].
 
