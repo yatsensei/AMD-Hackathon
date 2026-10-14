@@ -4,7 +4,7 @@ AMD Developer Hackathon ACT III — Track 1 "Intelligent Industry".
 
 - **Spec (source of truth for Phases 1–2):** [`docs/specs/SPEC_phase1_phase2.md`](docs/specs/SPEC_phase1_phase2.md)
 - **Why the spec looks the way it does:** [`docs/specs/REVIEW_phase1_phase2.md`](docs/specs/REVIEW_phase1_phase2.md)
-- **What's done:** [`docs/STATUS.md`](docs/STATUS.md)
+- **What's done:** [`docs/STATUS.md`](docs/STATUS.md) · **latest results:** [`docs/results/OVERNIGHT.md`](docs/results/OVERNIGHT.md)
 - **Hackathon brief (judging, rules):** [`docs/HACKATHON_BRIEF.md`](docs/HACKATHON_BRIEF.md)
 - **Our scope:** Phases 1–2 (data + CNN). Agent, dashboard and YOLO are owned by teammates; `wafer/infer_mock.py` shows them the API they'll get.
 

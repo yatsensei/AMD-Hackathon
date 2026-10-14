@@ -24,11 +24,11 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | `wafer/infer_mock.py` | Anisha / Akein | ✅ | Same signatures and keys as `wafer.infer`; heuristic outputs |
 | Training core (GPU-resident data, augmentation, sampler, models, losses, `train.py`) | Anisha / Akein | 🟡 | Code + tests ✅ on CPU/synthetic · first MI300X run ❌ |
 | Calibration, operating point, abstention (`calibrate.py`, `decision.py`) | Anisha / Akein | ✅ | Tested on toy data |
-| `metrics.py`, `evaluate.py` (val; `--final` once) | Anisha / Akein | 🟡 | Done except `--predictions` CSV for YOLO/E0b comparators |
-| `wafer/infer.py` + `wafer/explain.py` + `wafer/export.py` | Anisha / Akein | 🟡 | Code + tests ✅ (train/serve parity) · no real model yet |
-| E0 baseline → `models/v0` | Anisha / Akein | 🟡 | Training on **CPU** in Claude's environment (no AMD GPU available yet); AMD retrain pending a GPU |
-| E0b classical baseline | anyone free | ❌ | |
-| Tier 1 sweep + E-LEAK + E-COMB | Anisha / Akein | ❌ | Configs not written yet |
+| `metrics.py`, `evaluate.py` (val; `--final` once; `--predictions` CSV) | Anisha / Akein | ✅ | |
+| `wafer/infer.py` + `wafer/explain.py` + `wafer/export.py` | Anisha / Akein | ✅ | Serving `models/v0` (CPU); sanity inputs pass |
+| E0 baseline → `models/v0` | Anisha / Akein | ✅ (CPU) | Val macro-F1 0.902 (CI 0.885–0.913), 4 ms/wafer; `models/v0-tta` 0.911 at 27 ms. **Trained on CPU**: AMD retrain pending a GPU. See `docs/results/OVERNIGHT.md` |
+| E0b classical baseline | Claude | ✅ | Val macro-F1 0.865; CNN significantly better (+0.037) |
+| Tier 1 sweep + E-LEAK + E-COMB | Anisha / Akein | 🟡 | Single-seed CPU screening done (E-LEAK: no inflation; E1, E2, E3b: n.s.; TTA +0.009). Needs 5 seeds on an AMD GPU |
 | Freeze `models/v1` | Anisha / Akein | ❌ | |
 | Final test evaluation, once | Anisha / Akein | ❌ | |
 | Tier 2 (E9, E10, E11, E8, E4, E7) | Anisha / Akein | ❌ | |
