@@ -622,6 +622,10 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | Phase 2 impl | `infer_mock` returns heuristic (geometry-rule) outputs, not fixed ones | Lets the dashboard/agent exercise varied patterns and `needs_review` paths |
 | 14 Oct | Phase 2 impl | Operating point can only *add* defect calls to argmax (`none` needs top class AND `p(none) ≥ θ`); θ = 0 when argmax already meets the recall target | Synthetic run: "smallest θ meeting 95%" lowered recall from 100% to 95% and macro-F1 from 1.000 to 0.977 |
 | 14 Oct | Phase 2 impl | GPU may be AMD Radeon (Token Factory = Radeon Cloud), not MI300X. Code is GPU-agnostic on ROCm; every "MI300X" in this spec means "the AMD GPU in `env_amd.json`" | Pitch claims must match the recorded hardware |
+| 14 Oct | Phase 1 real run | `LSWMD.pkl` is a **Python 2** pickle: after aliasing `pandas.indexes`, load with pandas' compat `Unpickler(encoding="latin1")` (pandas 3.0.6 / Python 3.13; also tested on pandas 2.1) | pandas 3 raises `UnicodeDecodeError` instead of retrying latin1 |
+| 14 Oct | Phase 1 real run | Linked split groups holding > 1% of wafers are pinned to **train** (`--pin-train-frac`) | Real data: 3,234 informative maps appear identically in two lots and chain 598 lots (12,596 wafers, all one 26×26 product) into one group, which otherwise landed whole in test (half of it). Leakage stays blocked; val/test keep a natural product mix. Split is now 72/14/14 |
+| 14 Oct | Phase 1 real run | Dataset downloaded without credentials via Kaggle's public download endpoint (redirects to Kaggle's own GCS bucket); SHA-256 `1d04fccb…5c65` recorded in the data report | No Kaggle token in Claude's environment; dataset is public |
+| 14 Oct | v0 | `models/v0` trained on **CPU** (`configs/e0_cpu.yaml`: 1 seed, 30 epochs, bf16 + channels_last) | Token Factory has no GPU instances. v0 must not be described as trained on AMD; retrain with `e0_baseline.yaml` on an AMD GPU when one is available |
 | 14 Oct | Phase 2 impl | Noise-robustness slice flips pixels of the 64×64 encoding, not raw dies | Evaluation works from the npz; documented as pixel-level |
 | | | | |
 
