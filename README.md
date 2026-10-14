@@ -14,7 +14,7 @@ AMD Developer Hackathon ACT III — Track 1 "Intelligent Industry".
 
 ```bash
 git clone <this repo> && cd AMD-Hackathon
-export KAGGLE_USERNAME=... KAGGLE_KEY=...        # on the instance, never committed
+export KAGGLE_API_TOKEN=...                      # on the instance, never committed
 scripts/amd/start_container.sh                  # ROCm PyTorch container, repo at /workspace (re-run to re-attach)
 # inside the container:
 scripts/amd/bootstrap.sh                        # deps (never touches torch), GPU check -> docs/results/env_amd.json
@@ -37,8 +37,8 @@ from wafer.viz import render_wafer, render_heatmap
 
 ```bash
 pip install -r requirements.txt
-export KAGGLE_USERNAME=... KAGGLE_KEY=...        # never commit these
-pip install kaggle && scripts/download_data.sh  # checks the SHA-256 recorded in docs/results/data_report.md
+export KAGGLE_API_TOKEN=...                      # never commit it
+pip install "kaggle>=2" && scripts/download_data.sh  # checks the SHA-256 recorded in docs/results/data_report.md
 
 python scripts/prepare_data.py                    # critical path: data/processed/wafers_s64.npz + metadata.parquet
 python scripts/prepare_data.py --sizes 64 96 --yolo   # plus the non-critical outputs

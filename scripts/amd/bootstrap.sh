@@ -15,7 +15,7 @@ PY
 
 # requirements.txt never lists torch, so pip leaves the ROCm build alone.
 python -m pip install -q -r requirements.txt
-python -m pip install -q kaggle
+python -m pip install -q "kaggle>=2"
 python scripts/check_gpu.py --out docs/results/env_amd.json
 echo
 echo "Ready. Next: scripts/amd/run_e0.sh"

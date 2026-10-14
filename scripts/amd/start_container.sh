@@ -21,6 +21,6 @@ exec docker run -it --name "$NAME" \
   --device=/dev/kfd --device=/dev/dri --group-add video \
   --ipc=host --shm-size 16g \
   --security-opt seccomp=unconfined --cap-add=SYS_PTRACE \
-  -e KAGGLE_USERNAME -e KAGGLE_KEY \
+  -e KAGGLE_API_TOKEN -e KAGGLE_USERNAME -e KAGGLE_KEY \
   -v "$REPO":/workspace -w /workspace \
   "$IMAGE" bash

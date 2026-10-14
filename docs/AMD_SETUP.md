@@ -8,27 +8,26 @@ There are two ways in, depending on what the AMD access gives you:
 
 ---
 
-## What Token Factory gives us (from its docs, 14 Oct)
-- **A shared team API key** (`rc-...`) for free LLM endpoints (DeepSeek, Qwen, GLM, Gemma…) at `https://developer.amd.com.cn/radeon/api/v1`. It's for the **agent** teammates, not the CNN. Hand it over privately and keep it in an env var (`RADEON_API_KEY`, see `.env.example`). Never commit it or paste it into chat, a notebook output or a screenshot. All 5 of us share one key: 30 requests/min and 8 concurrent, team-wide.
-- **GPU instances (shell or notebook)** for anything the catalog doesn't offer, like training our CNN. These are paid with **credits**, so check your balance and **stop the instance when you're done** (`DELETE /api/notebook/current` or the stop button). This is where the steps below run.
-- The service is **AMD Radeon Cloud**, so the GPU may be a Radeon card rather than an Instinct MI300X. The code runs on either (ROCm + PyTorch). The pitch must name **whatever `docs/results/env_amd.json` records**, not "MI300X" by default.
+## What Token Factory gives us (checked 14 Oct)
+- **Only an LLM API:** one shared team key (`rc-...`) and a list of free models (DeepSeek, Qwen, GLM, Gemma…) at `https://developer.amd.com.cn/radeon/api/v1`. That's for the **agent** teammates, and it counts as the AMD part of the live product (the models run on AMD GPUs). Keep the key in an env var (`RADEON_API_KEY`, see `.env.example`); never commit it or paste it anywhere visible. All 5 of us share one key: 30 requests/min and 8 concurrent, team-wide.
+- **No GPU instances in the UI.** The API docs mention instance endpoints, but nothing in our dashboard offers them, so we treat them as unavailable.
+- **So the CNN needs a GPU from somewhere else.** Options, in order:
+  1. **AMD Developer Cloud** (a GPU VM: Instinct MI300X, SSH and/or Jupyter). The event page mentions a $100 credit. Ask in the lablab Discord / check the AMD AI Developer Program portal for how to claim it. A few hours of GPU is plenty for us. Then follow path **A** (Jupyter) or **B** (SSH) below.
+  2. **Any AMD GPU a teammate has** (Radeon RX 7000 series / Radeon PRO on Linux with ROCm): path **B** without Docker.
+  3. **No AMD GPU: train on CPU.** The CNN is small: about 2 s per 256-wafer step on 4 CPU cores (measured), so about 2–3 h per 30-epoch run. Claude can run this in its own cloud environment (path **C**) or anyone can run it on a laptop. The AMD requirement is then met by the agent's LLM on Token Factory, and the pitch must **not** say the CNN was trained on AMD.
 
 ## 0. Before you start (once, ~10 min)
-1. **Kaggle API token.** Go to kaggle.com → *Settings* → *API* → *Create New Token*. You get `kaggle.json` with a username and key. Keep it private: never paste it into chat, a notebook output, or git.
+1. **Kaggle API token.** kaggle.com → *Settings* → *API Tokens* → create one (the new kind; the legacy `kaggle.json` isn't needed). The scripts read it from the `KAGGLE_API_TOKEN` environment variable. Keep it private: never paste it into chat, a notebook output, or git.
 2. **Accept the dataset.** Open https://www.kaggle.com/datasets/qingyi/wm811k-wafer-map while logged in, so the API is allowed to download it.
-3. **Repo access from the AMD machine.** The notebook clones `https://github.com/yatsensei/AMD-Hackathon`. The submission needs a public repo anyway, so making it public now is simplest. If it stays private, you need a GitHub token with read access (and write access if you want to push results from the AMD side).
-4. **AMD access.** At notebooks.amd.com/tokenfactory every team member must sign in and click *Redeem API Key* (the key appears only after all 5 have). Then find the **instance / notebook** option (templates list) and check your credits. Post the answers in team chat (brief §4.2):
-   - Is there a GPU? Which one?
-   - Is there a terminal (JupyterLab *File → New → Terminal*)?
-   - Does disk persist between sessions?
-   - Can it reach the internet (github.com, kaggle.com, pypi.org)?
+3. **Repo access.** The repo is public, so cloning needs no token. Pushing results back needs a GitHub token with write access (or just download the results bundle).
+4. **A GPU** from the options above.
 
 ## A. Jupyter notebook path (most likely)
-1. In Token Factory, launch a **notebook instance** with a **PyTorch / ROCm** template (pick the one with a GPU). Open its JupyterLab.
+1. On the GPU machine (e.g. AMD Developer Cloud), open JupyterLab with a **PyTorch / ROCm** image.
 2. Upload `notebooks/amd_e0.ipynb` from this repo, or open a terminal and `git clone` the repo, then open the notebook from there.
 3. **Run cell 1 (GPU check).** You must see `hip: <version>` (not `None`) and an AMD device name (Instinct or Radeon). Note which one. If `hip` is `None`, you're on a CPU or NVIDIA build: switch to the ROCm image/kernel. **Never** `pip install torch` from PyPI there, because that installs the CUDA build.
 4. **Run cells 2–3.** They get the code, install dependencies (torch is left alone), and check the GPU, including a convolution through MIOpen. Cell 3 must end with `PASS`.
-5. **Run cell 4.** Type your Kaggle username and key. They stay in memory only.
+5. **Run cell 4.** Paste your Kaggle API token. It stays in memory only.
 6. **Run cell 5** (about 5–10 min, CPU). Downloads `LSWMD.pkl` (about 2 GB) and builds the dataset. Read the data report it prints, and check three things:
    - the labelled count is about 172,950;
    - every class has wafers in val and test;
@@ -41,7 +40,7 @@ There are two ways in, depending on what the AMD access gives you:
 ## B. SSH + Docker path
 ```bash
 git clone -b claude/great-ptolemy-wdot0b https://github.com/yatsensei/AMD-Hackathon && cd AMD-Hackathon
-export KAGGLE_USERNAME=... KAGGLE_KEY=...      # in your shell only
+export KAGGLE_API_TOKEN=...                    # in your shell only
 scripts/amd/start_container.sh                # ROCm PyTorch container, repo mounted at /workspace
 # inside the container:
 scripts/amd/bootstrap.sh                      # deps + GPU check (must print PASS)
@@ -49,7 +48,13 @@ tmux new -s e0 'scripts/amd/run_e0.sh'        # data -> 5 training runs -> model
 ```
 If your instance already has ROCm PyTorch installed without Docker, skip `start_container.sh` and run `bootstrap.sh` directly. It refuses to continue if torch has no ROCm support.
 
-**When finished: stop the instance** so it stops using credits.
+**When finished: stop the GPU machine** so it stops using credits.
+
+## C. Let Claude run it (CPU, no AMD GPU needed)
+In this Claude Code cloud environment's settings (environment menu in the session title bar → *Edit*):
+1. **Environment variable:** `KAGGLE_API_TOKEN` = your Kaggle API token.
+2. **Network access → Allowed domains:** add `www.kaggle.com`, `kaggle.com` and `api.kaggle.com` (the download itself comes from Google Cloud Storage, which is already reachable).
+3. Start a new session and say "run Phase 1 and train v0". Claude downloads the data, builds the dataset, trains on CPU (a few hours), and commits the results like the AMD path would. The results say "cpu", not an AMD GPU.
 
 ## What to send back
 Either `results_bundle.tar.gz`, or a push containing:
@@ -83,7 +88,8 @@ Never commit `data/`, `experiments/*/weights*`, or any token.
 ## Troubleshooting
 - **`hip: None` / no GPU:** wrong image or kernel. Pick the ROCm/PyTorch one. In Docker, the container needs `--device=/dev/kfd --device=/dev/dri` (the script adds them).
 - **First epochs very slow:** MIOpen is searching for kernels. The code sets `MIOPEN_FIND_MODE=FAST`. Later runs reuse the `.miopen/` cache.
-- **`kaggle: 403`:** accept the dataset's terms on the Kaggle page (step 0.2). **`401`:** wrong username or key.
+- **`kaggle: 403`:** accept the dataset's terms on the Kaggle page (step 0.2). **`401`:** wrong or expired token.
+- **`unrecognized arguments: -d`:** an old copy of the script; `git pull` (kaggle 2.x takes the dataset name without `-d`).
 - **Kaggle or GitHub unreachable from the AMD machine:** download `LSWMD.pkl` elsewhere and upload it to `data/raw/` (2 GB, so use the terminal with `scp` or `curl` from your own storage if the browser upload struggles). Then skip the download step.
 - **Split search error "No split seed … meets the minimum per-class counts":** it prints how far off it was. Lower the minimum, e.g. `python scripts/prepare_data.py --min-count Near-full=10`, and tell Claude the numbers.
 - **Out of GPU memory with 5 parallel runs:** `N=2 bash scripts/run_sweep.sh configs/e0_baseline.yaml`.

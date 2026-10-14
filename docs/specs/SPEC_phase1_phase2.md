@@ -115,9 +115,9 @@ Center ≈ 4,294 · Donut ≈ 555 · Edge-Loc ≈ 5,189 · Edge-Ring ≈ 9,680 �
 
 ### 3.2 Download — `scripts/download_data.sh`
 ```bash
-# Needs KAGGLE_USERNAME and KAGGLE_KEY in env (never commit them)
+# Needs KAGGLE_API_TOKEN (or legacy KAGGLE_USERNAME + KAGGLE_KEY) in env; never commit them
 mkdir -p data/raw
-kaggle datasets download -d qingyi/wm811k-wafer-map -p data/raw --unzip
+kaggle datasets download qingyi/wm811k-wafer-map -p data/raw --unzip   # kaggle>=2: no -d flag
 sha256sum data/raw/LSWMD.pkl   # compare with docs/results/data_report.md before loading
 ```
 The first person to download records the SHA-256 in `docs/results/data_report.md`. Everyone else checks against it **before** unpickling.

@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# Download WM-811K (spec 3.2). Needs KAGGLE_USERNAME and KAGGLE_KEY in the environment
-# (never commit them) and the kaggle CLI: pip install kaggle
+# Download WM-811K (spec 3.2). Credentials come from the environment (never commit them):
+#   KAGGLE_API_TOKEN                  new-style API token (kaggle.com -> Settings -> API Tokens), or
+#   KAGGLE_USERNAME + KAGGLE_KEY      legacy kaggle.json values
+# Needs the kaggle CLI >= 2: pip install "kaggle>=2"
 set -euo pipefail
 
-: "${KAGGLE_USERNAME:?set KAGGLE_USERNAME}"
-: "${KAGGLE_KEY:?set KAGGLE_KEY}"
-command -v kaggle >/dev/null || { echo "kaggle CLI not found: pip install kaggle" >&2; exit 1; }
+if [[ -z "${KAGGLE_API_TOKEN:-}" && ( -z "${KAGGLE_USERNAME:-}" || -z "${KAGGLE_KEY:-}" ) ]]; then
+  echo "Set KAGGLE_API_TOKEN (or KAGGLE_USERNAME and KAGGLE_KEY)." >&2; exit 1
+fi
+command -v kaggle >/dev/null || { echo 'kaggle CLI not found: pip install "kaggle>=2"' >&2; exit 1; }
 
 mkdir -p data/raw
-kaggle datasets download -d qingyi/wm811k-wafer-map -p data/raw --unzip
+# Positional dataset argument: kaggle 2.x removed the old -d flag.
+kaggle datasets download qingyi/wm811k-wafer-map -p data/raw --unzip
 ls -lh data/raw
 
 if command -v sha256sum >/dev/null; then sha=$(sha256sum data/raw/LSWMD.pkl | cut -d' ' -f1)
