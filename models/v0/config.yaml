@@ -1,0 +1,12 @@
+version: v0
+encoding: area
+size: 64
+tta: false
+aux_features: false
+members:
+- model: small_cnn
+  encoding: area
+  size: 64
+  aux_features: false
+  source_run: e0_cpu_s0_20261014-132410
+  seed: 0
