@@ -122,7 +122,7 @@ def test_latency_smoke(clf):
 
 def test_export_artifacts(trained):
     _, model_dir, _ = trained
-    for f in ["config.yaml", "calibration.json", "classes.json", "metrics_val.json", "README.md", "weights/m0.safetensors"]:
+    for f in ["config.yaml", "calibration.json", "classes.json", "metrics_val.json", "README.md", "weights/m0.safetensors", "cnn.pt"]:
         assert (model_dir / f).exists(), f
     cal = json.loads((model_dir / "calibration.json").read_text())
     assert cal["temperature"] > 0 and 0 <= cal["theta_none"] and 0 <= cal["tau"] <= 1

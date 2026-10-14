@@ -45,6 +45,10 @@ def export(runs: list[Path], version: str, out_root: Path, data_dir: Path, tta: 
     (out / "weights").mkdir(parents=True)
     for i, r in enumerate(runs):
         shutil.copy(r / "weights.safetensors", out / "weights" / f"m{i}.safetensors")
+    # Team plan: torch.save(model.state_dict(), "cnn.pt"). Same weights as m0; wafer.infer
+    # loads the safetensors copies (no pickle), cnn.pt is for anyone loading it by hand.
+    from safetensors.torch import load_file
+    torch.save(load_file(str(out / "weights" / "m0.safetensors")), out / "cnn.pt")
     c0 = cfgs[0]
     cfg = {"version": version, "encoding": c0["encoding"], "size": int(c0["size"]), "tta": tta,
            "aux_features": bool(c0.get("aux_features", False)),
