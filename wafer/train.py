@@ -43,7 +43,8 @@ DEFAULTS = {
     "encoding": "area", "size": 64, "loss": "weighted_ce", "sampler": "none_downsample",
     "none_per_epoch": 15000, "aug": {"d4": True, "small_rot": False, "die_flip": 0.0},
     "optim": {"lr": 1.0e-3, "wd": 1.0e-4, "epochs": 30, "batch_size": 256, "warmup_epochs": 1},
-    "seeds": [0], "aux_features": False, "amp": True, "compile": False,
+    "seeds": [0], "aux_features": False, "amp": True, "cpu_bf16": False, "channels_last": False,
+    "compile": False, "eval_every": 1,
     "recall_target": calibrate.DEFAULT_RECALL_TARGET, "sel_acc_target": calibrate.DEFAULT_SEL_ACC_TARGET,
 }
 
@@ -127,6 +128,8 @@ def train_one(cfg: dict, seed: int, data_dir: Path, out_root: Path, device: str,
                                                                           cfg["none_per_epoch"]).tolist()}, indent=2))
 
     model = build_model(cfg).to(device)
+    mem = torch.channels_last if cfg.get("channels_last") else torch.contiguous_format
+    model = model.to(memory_format=mem)
     fwd = torch.compile(model) if cfg.get("compile") else model
     crit = make_loss(cfg["loss"], torch.tensor(w, dtype=torch.float32, device=device))
     o = cfg["optim"]
@@ -136,7 +139,9 @@ def train_one(cfg: dict, seed: int, data_dir: Path, out_root: Path, device: str,
     steps_per_epoch = math.ceil(n_epoch / o["batch_size"])
     total = o["epochs"] * steps_per_epoch
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda(o["warmup_epochs"] * steps_per_epoch, total))
-    amp = bool(cfg["amp"]) and device.startswith("cuda")
+    dev_type = device.split(":")[0]
+    # bf16 autocast: on the AMD GPU by default; on CPU only if asked (fast with AMX, e.g. Sapphire Rapids)
+    amp = bool(cfg["amp"]) and (dev_type == "cuda" or bool(cfg.get("cpu_bf16", False)))
 
     history, step = [], 0
     for epoch in range(o["epochs"]):
@@ -146,8 +151,8 @@ def train_one(cfg: dict, seed: int, data_dir: Path, out_root: Path, device: str,
         loss_sum, n_seen = 0.0, 0
         for i in range(0, len(idx), o["batch_size"]):
             base, y, aux = data.batch(idx[i:i + o["batch_size"]])
-            x = to_input(augment(base, cfg["aug"]), cfg["encoding"])
-            with torch.autocast("cuda", dtype=torch.bfloat16, enabled=amp):
+            x = to_input(augment(base, cfg["aug"]), cfg["encoding"]).contiguous(memory_format=mem)
+            with torch.autocast(dev_type, dtype=torch.bfloat16, enabled=amp):
                 logits = fwd(x, aux)
             loss = crit(logits.float(), y)
             opt.zero_grad(set_to_none=True)
@@ -160,14 +165,20 @@ def train_one(cfg: dict, seed: int, data_dir: Path, out_root: Path, device: str,
             step += 1
             if max_steps and step >= max_steps:
                 break
-        z_val = predict_rows(model, data, va, amp=amp)
+        row = {"epoch": epoch + 1, "train_loss": loss_sum / max(n_seen, 1), "lr": sched.get_last_lr()[0],
+               "seconds": time.time() - t_ep}
+        last = epoch + 1 == o["epochs"] or bool(max_steps and step >= max_steps)
+        if (epoch + 1) % int(cfg.get("eval_every", 1)) and not last:     # diagnostics only; skip to save time
+            history.append(row)
+            log.info("epoch %d/%d loss %.4f (%.1fs)", row["epoch"], o["epochs"], row["train_loss"], row["seconds"])
+            continue
+        z_val = predict_rows(model, data, va, amp=amp and dev_type == "cuda")
         y_val = data.y_np[va]
         cm = metrics.confusion(y_val, z_val.argmax(1))
-        row = {"epoch": epoch + 1, "train_loss": loss_sum / max(n_seen, 1),
+        row = {**row,
                "val_loss": metrics.nll(y_val, calibrate.softmax(z_val)),
                "val_macro_f1": metrics.macro_f1(cm), "val_defect_macro_f1": metrics.macro_f1(cm, DEFECT_IDX),
-               "val_bal_acc": metrics.balanced_accuracy(cm), "lr": sched.get_last_lr()[0],
-               "seconds": time.time() - t_ep}
+               "val_bal_acc": metrics.balanced_accuracy(cm)}
         history.append(row)
         log.info("epoch %d/%d loss %.4f val_loss %.4f val_macro_f1 %.4f (%.1fs)", row["epoch"], o["epochs"],
                  row["train_loss"], row["val_loss"], row["val_macro_f1"], row["seconds"])

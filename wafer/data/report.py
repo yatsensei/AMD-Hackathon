@@ -76,6 +76,7 @@ def split_table(meta: pd.DataFrame) -> pd.DataFrame:
 
 def write_report(path: str | Path, *, sha256: str, sha_verified: bool, clean_info, dup_report,
                  link_report, dup_min_minority: int, search, min_count: dict,
+                 n_pinned: int = 0, pin_train_frac: float = 0.01,
                  max_rel_dev: float, rel_dev: pd.DataFrame, cv_seed: int, meta: pd.DataFrame,
                  sizes: list[int], command: str) -> None:
     ci = clean_info
@@ -121,6 +122,7 @@ Versions: {_versions()}
 Encodings written for sizes: {', '.join(f'`wafers_s{s}.npz`' for s in sizes)}.
 
 ## Split (lot-grouped, stratified, 70/15/15)
+- Actual shares: train {(meta.split == 'train').mean():.1%} · val {(meta.split == 'val').mean():.1%} · test {(meta.split == 'test').mean():.1%}.
 - Seed search over {len(search.results)} seeds: **{search.n_feasible}** met the minimum counts. Chosen seed **{search.seed}**, worst relative class-share deviation in val/test **{ch.worst_dev:.3f}** ({ch.worst_where[0]} in {ch.worst_where[1]}).
 - Minimum per-class counts in val and test: {min_count}. Maximum allowed relative deviation: {max_rel_dev}.
 - Split unit: **split group** = a lot, or several lots linked because they share a duplicate map (see Duplicates). {lr.n_groups:,} groups.
@@ -140,6 +142,7 @@ Relative class-share deviation per split (|share in split − overall share| / o
 - **Groups with conflicting labels: {dr.n_conflicting_groups:,}** ({dr.n_rows_in_conflicting_groups:,} wafers). Identical maps with different labels are a measured lower bound on label noise.
 - Class mix of duplicated wafers: {dr.class_mix}
 - **Leakage handling:** {lr.n_cross_lot_hashes:,} informative maps appear in more than one lot. Their {lr.n_lots_linked:,} lots were linked into shared split groups, so every copy lands in the same split and no wafer was dropped. Largest group: {lr.largest_group_wafers:,} wafers / {lr.largest_group_lots:,} lots. Verified after splitting: no informative map appears in two splits.
+- **Pinned to train:** {n_pinned:,} wafers in linked groups larger than {100 * pin_train_frac:.0f}% of the data. A group that big would otherwise dominate a 15% val or test split and skew its product mix.
 
 ## Map sizes (final labelled set)
 - Distinct shapes: {meta.groupby(['orig_h', 'orig_w']).ngroups:,}. `orig_h*orig_w`: min {q[0]:,.0f} · q25 {q[1]:,.0f} · median {q[2]:,.0f} · q75 {q[3]:,.0f} · max {q[4]:,.0f}.

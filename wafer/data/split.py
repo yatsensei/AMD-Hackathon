@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 N_FOLDS, N_TEST_FOLDS, N_VAL_FOLDS = 20, 3, 3      # 3/20 test, 3/20 val, 14/20 train
 DEFAULT_MIN_COUNT = {c: 100 for c in CLASSES} | {"Near-full": 15, "Donut": 50}
 DEFAULT_MAX_REL_DEV = 0.25
+DEFAULT_PIN_TRAIN_FRAC = 0.01     # linked groups bigger than this share of wafers go to train
 N_CV_FOLDS = 5
 
 
@@ -69,9 +70,24 @@ def score_split(labels: np.ndarray, split: np.ndarray, min_count: dict) -> SeedR
                       worst_where=(str(where[0]), str(where[1])), shortfalls=shortfalls)
 
 
+def make_split_pinned(y: np.ndarray, groups: np.ndarray, pin_train: np.ndarray, seed: int) -> np.ndarray:
+    """make_split on the unpinned rows; pinned rows (oversized groups) always go to train."""
+    split = np.full(len(y), "train", dtype=object)
+    free = np.flatnonzero(~pin_train)
+    split[free] = make_split(y[free], groups[free], seed)
+    return split
+
+
+def oversized_groups(groups, max_frac: float) -> np.ndarray:
+    """Row mask for groups holding more than `max_frac` of all rows."""
+    g = pd.Series(np.asarray(groups, dtype=object))
+    sizes = g.map(g.value_counts())
+    return (sizes > max_frac * len(g)).to_numpy()
+
+
 def _try_seed(y: np.ndarray, groups: np.ndarray, labels: np.ndarray, min_count: dict,
-              seed: int) -> SeedResult:
-    r = score_split(labels, make_split(y, groups, seed), min_count)
+              pin_train: np.ndarray, seed: int) -> SeedResult:
+    r = score_split(labels, make_split_pinned(y, groups, pin_train, seed), min_count)
     r.seed = seed
     return r
 
@@ -89,18 +105,21 @@ class SplitSearch:
 
 
 def search_split(labels, groups, seeds=range(100), min_count: dict | None = None,
-                 jobs: int | None = None) -> SplitSearch:
+                 jobs: int | None = None, pin_train=None) -> SplitSearch:
     """Try every seed; keep the feasible one with the lowest worst-case relative deviation.
 
     Feasible = every class meets `min_count` in both val and test. Ties go to the lower seed.
+    `pin_train` (row mask) forces rows into train, e.g. oversized linked groups that would
+    otherwise dominate a 15% evaluation split.
     """
     min_count = DEFAULT_MIN_COUNT if min_count is None else min_count
     labels = np.asarray(labels, dtype=object)
     y = pd.Categorical(labels, categories=CLASSES).codes.astype(np.int64)
     g = pd.factorize(np.asarray(groups, dtype=object))[0]
+    pin = np.zeros(len(y), bool) if pin_train is None else np.asarray(pin_train, bool)
     seeds = list(seeds)
     jobs = jobs or os.cpu_count() or 1
-    fn = partial(_try_seed, y, g, labels, min_count)
+    fn = partial(_try_seed, y, g, labels, min_count, pin)
     if jobs == 1 or len(seeds) == 1:
         results = [fn(s) for s in seeds]
     else:
@@ -120,7 +139,7 @@ def search_split(labels, groups, seeds=range(100), min_count: dict | None = None
     chosen = min(feasible, key=lambda r: (r.worst_dev, r.seed))
     log.info("split seed %d: worst relative deviation %.3f (%s in %s); %d/%d seeds feasible",
              chosen.seed, chosen.worst_dev, *chosen.worst_where, len(feasible), len(seeds))
-    return SplitSearch(seed=chosen.seed, split=make_split(y, g, chosen.seed),
+    return SplitSearch(seed=chosen.seed, split=make_split_pinned(y, g, pin, chosen.seed),
                        chosen=chosen, results=results)
 
 

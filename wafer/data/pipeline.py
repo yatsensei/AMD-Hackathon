@@ -53,6 +53,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--cv-seed", type=int, default=0)
     p.add_argument("--dup-min-minority", type=int, default=preprocess.DUP_MIN_MINORITY,
                    help="duplicate maps link lots only if min(n_fail, n_pass) >= this")
+    p.add_argument("--pin-train-frac", type=float, default=splitlib.DEFAULT_PIN_TRAIN_FRAC,
+                   help="linked groups holding more than this share of wafers always go to train")
     p.add_argument("--jobs", type=int, default=None, help="processes for the split search")
     p.add_argument("--yolo", action="store_true", help="also write yolo_data/ PNGs (non-critical)")
     p.add_argument("--yolo-dir", default="yolo_data")
@@ -111,13 +113,16 @@ def run(args: argparse.Namespace, command: str = "") -> pd.DataFrame:
              "%d lots linked into shared split groups, largest group %d wafers / %d lots",
              dup.n_groups, dup.n_informative_groups, dup.n_conflicting_groups, link.n_lots_linked,
              link.largest_group_wafers, link.largest_group_lots)
-    if link.largest_group_wafers > 0.01 * len(lab):
-        log.warning("largest linked group holds %.1f%% of wafers: check duplicates in the report, "
-                    "consider --dup-min-minority 2", 100 * link.largest_group_wafers / len(lab))
+    pin = splitlib.oversized_groups(lab["split_group"].to_numpy(), args.pin_train_frac)
+    if pin.any():
+        log.warning("%d wafers in linked groups larger than %.1f%% of the data are pinned to train "
+                    "(largest: %d wafers / %d lots); see the duplicates section of the report",
+                    int(pin.sum()), 100 * args.pin_train_frac, link.largest_group_wafers, link.largest_group_lots)
 
     log.info("split search over %d seeds", args.split_seeds)
     search = splitlib.search_split(lab["label"].to_numpy(), lab["split_group"].to_numpy(),
-                                   seeds=range(args.split_seeds), min_count=min_count, jobs=args.jobs)
+                                   seeds=range(args.split_seeds), min_count=min_count, jobs=args.jobs,
+                                   pin_train=pin)
     lab["split"] = search.split
     lab = lab.sort_values("uid").reset_index(drop=True)
     lab["cv_fold"] = splitlib.assign_cv_folds(lab["label"].to_numpy(), lab["split_group"].to_numpy(),
@@ -131,7 +136,8 @@ def run(args: argparse.Namespace, command: str = "") -> pd.DataFrame:
         "seed": search.seed, "seeds_tried": args.split_seeds, "n_feasible": search.n_feasible,
         "worst_rel_dev": search.chosen.worst_dev, "min_count": min_count,
         "max_rel_dev": args.max_rel_dev, "cv_seed": args.cv_seed,
-        "dup_min_minority": args.dup_min_minority}, indent=2))
+        "dup_min_minority": args.dup_min_minority, "pin_train_frac": args.pin_train_frac,
+        "n_pinned_to_train": int(pin.sum())}, indent=2))
 
     encoded = {}
     for s in args.sizes:
@@ -145,6 +151,7 @@ def run(args: argparse.Namespace, command: str = "") -> pd.DataFrame:
 
     write_report(args.report, sha256=sha, sha_verified=bool(expected), clean_info=info,
                  dup_report=dup, link_report=link, dup_min_minority=args.dup_min_minority,
+                 n_pinned=int(pin.sum()), pin_train_frac=args.pin_train_frac,
                  search=search, min_count=min_count, max_rel_dev=args.max_rel_dev, rel_dev=rel_dev,
                  cv_seed=args.cv_seed, meta=meta, sizes=args.sizes,
                  command=command)

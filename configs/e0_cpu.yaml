@@ -1,0 +1,19 @@
+# E0 baseline, CPU edition: used for models/v0 when no AMD GPU is available (Token Factory has
+# no GPU instances). Same model/data/loss/augmentation as e0_baseline.yaml; one seed, 30 epochs
+# (team plan: 15-30), bf16 autocast + channels_last (2.3x faster on AMX CPUs), val every 5 epochs.
+# Anything trained with this config is NOT "trained on AMD": env.json/summary.json say "cpu".
+experiment: E0
+model: small_cnn
+encoding: area
+size: 64
+loss: weighted_ce
+sampler: none_downsample
+none_per_epoch: 15000
+aug: {d4: true, small_rot: false, die_flip: 0.0}
+optim: {lr: 1.0e-3, wd: 1.0e-4, epochs: 30, batch_size: 256, warmup_epochs: 1}
+seeds: [0]
+aux_features: false
+amp: true
+cpu_bf16: true
+channels_last: true
+eval_every: 5

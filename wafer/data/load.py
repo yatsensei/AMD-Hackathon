@@ -55,12 +55,30 @@ def _modern_name(missing: str, prefixes: dict[str, str]) -> str | None:
     return None
 
 
+def _read_pickle(path: str | Path):
+    """`pd.read_pickle`, falling back to latin1 for Python 2 pickles.
+
+    LSWMD.pkl was written by Python 2: its byte strings only decode as latin1, and pandas >= 3
+    no longer retries that by itself. pandas' compat Unpickler also remaps old class locations.
+    """
+    try:
+        return pd.read_pickle(path)
+    except UnicodeDecodeError:
+        log.warning("pickle compat: Python 2 pickle, loading with encoding='latin1'")
+        try:
+            from pandas.compat.pickle_compat import Unpickler
+        except ImportError:                                  # pragma: no cover
+            from pickle import Unpickler
+        with open(path, "rb") as f:
+            return Unpickler(f, encoding="latin1").load()
+
+
 def read_pickle_with_aliases(path: str | Path, prefixes: dict[str, str] | None = None):
-    """`pd.read_pickle`, aliasing old module paths one at a time until it loads."""
+    """Read a pickle, aliasing old module paths one at a time until it loads."""
     prefixes = OLD_MODULE_PREFIXES if prefixes is None else prefixes
     for _ in range(_MAX_ALIAS_ROUNDS):
         try:
-            return pd.read_pickle(path)
+            return _read_pickle(path)
         except ModuleNotFoundError as e:
             missing = e.name or ""
             new = _modern_name(missing, prefixes)

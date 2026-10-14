@@ -60,6 +60,13 @@ def test_old_module_paths_are_aliased(tmp_path, monkeypatch):
     monkeypatch.delitem(sys.modules, "wafer_test_oldpkg")
 
 
+def test_python2_pickle_loads_with_latin1(tmp_path):
+    """LSWMD.pkl is a Python 2 pickle: a py2 `str` with non-ASCII bytes must still load."""
+    p = tmp_path / "py2.pkl"
+    p.write_bytes(b"\x80\x02U\x02\x9a\x9bq\x00.")       # PROTO 2, SHORT_BINSTRING b'\x9a\x9b', STOP
+    assert read_pickle_with_aliases(p) == "\x9a\x9b"
+
+
 def test_load_raw_roundtrip_with_hash(tmp_path):
     df = make_raw_df(n_lots=10, wafers_per_lot=3)
     p = tmp_path / "LSWMD.pkl"
@@ -249,6 +256,17 @@ def test_split_search_parallel_matches_serial(cleaned, searched):
     p = splitlib.search_split(lab["label"].to_numpy(), preprocess.link_lots(lab)[0].to_numpy(), seeds=range(6),
                               min_count=SMALL_MIN, jobs=2)
     assert p.seed == s.seed and (p.split == s.split).all()
+
+
+def test_oversized_groups_are_pinned_to_train(cleaned):
+    lab, _, _ = cleaned
+    groups = lab["lotName"].to_numpy().copy()
+    groups[:300] = "giant"                                     # one group with ~15% of rows
+    pin = splitlib.oversized_groups(groups, 0.05)
+    assert pin[:300].all() and not pin[300:].any()
+    s = splitlib.search_split(lab["label"].to_numpy(), groups, seeds=range(3), min_count={c: 1 for c in CLASSES},
+                              jobs=1, pin_train=pin)
+    assert (s.split[:300] == "train").all()
 
 
 def test_split_search_infeasible_raises(cleaned):
