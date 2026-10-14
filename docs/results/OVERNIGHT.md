@@ -19,7 +19,7 @@
 | Model | Macro-F1 (9) | Defect macro-F1 | Defect recall / precision | CPU ms/wafer | vs v0 (paired lot bootstrap) |
 |---|---|---|---|---|---|
 | **v0**: small CNN, area encoding, weighted CE + `none` downsampling, D4 aug (`models/v0`) | **0.902** (0.885–0.913) | 0.890 | 0.950 / 0.961 | 4.0 | — |
-| **v0-tta**: same weights, D4 ×8 test-time averaging (`models/v0-tta`) | **0.911** (0.894–0.923) | 0.901 | 0.950 / 0.963 | 27.3 | paired test pending (see commit after this one) |
+| **v0-tta**: same weights, D4 ×8 test-time averaging (`models/v0-tta`) | **0.911** (0.894–0.923) | 0.901 | 0.950 / 0.963 | 27.3 | **+0.009 (+0.005 to +0.014), significant** |
 | E0b: classical features + gradient boosting | 0.865 (0.847–0.878) | 0.850 | 0.950 / 0.881 | <1 | **−0.037 (−0.052 to −0.023), significant** |
 | E1: nearest-neighbour encoding (team plan) | 0.906 | 0.896 | 0.950 / 0.953 | 2.9* | +0.005 (−0.005 to +0.015), n.s. |
 | E3b: + small rotation augmentation | 0.908 | 0.898 | 0.950 / 0.959 | 2.6* | +0.007 (−0.001 to +0.016), n.s. |
@@ -42,7 +42,7 @@
 2. **E-LEAK: no measurable leakage inflation** (0.9018 random vs 0.9016 lot-grouped). The spec expected random splits to inflate scores; on this data they don't. **Pitch consequence:** drop "lot grouping is worth L points". Say instead: "we tested for lot leakage: the score holds under both protocols." Lot grouping stays, since it's the right protocol and costs nothing.
 3. **E1: the encoding doesn't matter on real data.** Nearest and area-fraction tie, and Scratch F1 is identical. The median wafer is only ~33×33 dies, so most maps are *upsampled* to 64×64, and nearest loses nothing when upsampling. Area-fraction stays the default because it protects the minority of large wafers.
 4. **E3b (rotation) is the most promising change** (+0.007) but not significant on one seed. **E2 (focal loss) does nothing.**
-5. **TTA gives +0.009** for 7× the latency, still within budget.
+5. **TTA gives a significant +0.009** (paired CI +0.005 to +0.014; McNemar p = 0.0004) for 7× the latency (27 ms), still within the 50 ms budget. It's the one change so far that's clearly worth shipping.
 
 All of this is in the spec's Decisions Log.
 
