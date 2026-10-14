@@ -1,0 +1,15 @@
+# E3b (spec 6.2), CPU screening: identical to e0_cpu.yaml except D4 + small rotation (+-15 deg, p=0.5).
+experiment: E3b
+model: small_cnn
+encoding: area
+size: 64
+loss: weighted_ce
+sampler: none_downsample
+none_per_epoch: 15000
+aug: {d4: true, small_rot: true, die_flip: 0.0}
+optim: {lr: 1.0e-3, wd: 1.0e-4, epochs: 30, batch_size: 256, warmup_epochs: 1}
+seeds: [0]
+amp: true
+cpu_bf16: true
+channels_last: true
+eval_every: 5

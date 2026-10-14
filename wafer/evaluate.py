@@ -254,7 +254,7 @@ def figures(s: Scored, out: Path, res: dict) -> None:
 
 
 def run(model_dir: Path, data_dir: Path, final: bool, comparators: list[Path], out: Path | None,
-        device: str, n_boot: int) -> Path:
+        device: str, n_boot: int, do_slices: bool = True) -> Path:
     split = "test" if final else "val"
     if final:
         out = FINAL_DIR
@@ -269,8 +269,8 @@ def run(model_dir: Path, data_dir: Path, final: bool, comparators: list[Path], o
                 "note": "validation (calibrated on this set: optimistic)" if not final else "test, scored once"})
     if s.members is not None:
         res["sanity_inputs"] = sanity(model_dir)
-    sl = slices(s)
-    sl.to_csv(out / "slices.csv", index=False)
+    if do_slices:
+        slices(s).to_csv(out / "slices.csv", index=False)
     pd.DataFrame(res["per_class"]).to_csv(out / "per_class.csv", index=False)
 
     comps = {}
@@ -310,10 +310,11 @@ def main(argv=None) -> Path:
     p.add_argument("--out", default=None)
     p.add_argument("--n-boot", type=int, default=1000)
     p.add_argument("--device", default=None)
+    p.add_argument("--no-slices", action="store_true", help="skip robustness slices (11 extra passes; slow with TTA)")
     a = p.parse_args(argv)
     device = a.device or ("cuda" if torch.cuda.is_available() else "cpu")
     return run(Path(a.model or a.predictions), Path(a.data_dir), a.final, [Path(c) for c in a.comparators],
-               Path(a.out) if a.out else None, device, a.n_boot)
+               Path(a.out) if a.out else None, device, a.n_boot, do_slices=not a.no_slices)
 
 
 if __name__ == "__main__":
