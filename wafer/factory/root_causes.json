@@ -9,56 +9,56 @@
     "machine": "CMP polisher or CVD deposition chamber",
     "tool_family": "CMP",
     "recommended_action": "Check CMP pad/head pressure profile and deposition uniformity monitors for the affected tool",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "Donut": {
     "cause": "Ring-shaped failures at mid radius: temperature or gas-flow non-uniformity forming an annulus",
     "machine": "CVD deposition or thermal (RTP/anneal) chamber",
     "tool_family": "DEP",
     "recommended_action": "Review chamber temperature zones and gas distribution for the affected tool",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "Edge-Loc": {
     "cause": "Localised failures at one part of the edge: clamping, edge-bead removal or handling contact",
     "machine": "Lithography track (edge-bead removal) or wafer handling",
     "tool_family": "LITHO",
     "recommended_action": "Inspect wafer chuck/clamp ring and edge-bead removal nozzle alignment",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "Edge-Ring": {
     "cause": "Failures around the full wafer edge: plasma or thermal non-uniformity at the edge (edge ring / focus ring wear)",
     "machine": "Plasma etch chamber",
     "tool_family": "ETCH",
     "recommended_action": "Hold the tool; inspect focus/edge ring wear and edge etch-rate uniformity",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "Loc": {
     "cause": "A localised cluster of failures away from the edge: particle or contamination event",
     "machine": "Any process tool; often deposition or lithography",
     "tool_family": "ANY",
     "recommended_action": "Run particle check on tools the lot visited; review defect inspection images",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "Near-full": {
     "cause": "Almost the whole wafer fails: a gross process failure (missed or wrong step, mis-processed recipe)",
     "machine": "Process step failure; check recipe and lithography exposure",
     "tool_family": "ANY",
     "recommended_action": "Stop the lot; verify recipe and step history before processing more wafers",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "Random": {
     "cause": "Failures spread randomly over the wafer: background particle contamination",
     "machine": "Cleanroom environment or wet clean",
     "tool_family": "CLEAN",
     "recommended_action": "Check cleanroom particle counts and wet-clean bath chemistry",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "Scratch": {
     "cause": "A line of failures: mechanical scratch",
     "machine": "CMP polisher or wafer-handling robot",
     "tool_family": "CMP",
     "recommended_action": "Inspect CMP pad conditioner and robot end-effector for debris",
-    "source": "Phase 4 notebook (heuristic; confirm citation)"
+    "source": "Triage heuristic; no citation yet"
   },
   "none": {
     "cause": "No spatial failure pattern",
