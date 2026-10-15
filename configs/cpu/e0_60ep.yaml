@@ -1,0 +1,17 @@
+# Longer training: e0_cpu.yaml with 60 epochs instead of 30 (val macro-F1 was still rising at 30).
+# fp32 + channels_last + torch.compile (no AMX bf16 on this CPU).
+experiment: E0-60
+model: small_cnn
+encoding: area
+size: 64
+loss: weighted_ce
+sampler: none_downsample
+none_per_epoch: 15000
+aug: {d4: true, small_rot: false, die_flip: 0.0}
+optim: {lr: 1.0e-3, wd: 1.0e-4, epochs: 60, batch_size: 256, warmup_epochs: 1}
+seeds: [0]
+amp: true
+cpu_bf16: false
+channels_last: true
+compile: true
+eval_every: 10
