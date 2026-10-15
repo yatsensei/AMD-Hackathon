@@ -1,7 +1,6 @@
-# E0 baseline, CPU edition (fp32 variant for hosts without AMX bf16): same recipe as e0_cpu.yaml,
-# no GPU instances). Same model/data/loss/augmentation as e0_baseline.yaml; one seed, 30 epochs
-# fp32 + channels_last + torch.compile. Used for extra ensemble seeds.
-# Anything trained with this config is NOT "trained on AMD": env.json/summary.json say "cpu".
+# E0 baseline, CPU fp32 variant for hosts without AMX bf16 (bf16 is ~4x slower there).
+# Same model/data/loss/augmentation/epochs as e0_cpu.yaml; fp32 + channels_last + torch.compile.
+# Used for extra ensemble seeds. NOT "trained on AMD": env.json/summary.json say "cpu".
 experiment: E0
 model: small_cnn
 encoding: area
