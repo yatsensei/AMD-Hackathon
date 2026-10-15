@@ -2,14 +2,14 @@
   "_meta": {
     "version": 1,
     "keys": "wafer.constants.CLASSES (8 defect patterns + none); checked by tests/test_factory.py",
-    "note": "Pattern-to-cause mapping is a triage heuristic, not a diagnosis: several tools can produce the same pattern. source = where the association comes from."
+    "note": "Pattern-to-cause mapping is a triage heuristic, not a diagnosis: several tools can produce the same pattern. source = where the association comes from. 'not read in full' = taken from a search excerpt; open the paper and confirm before quoting it."
   },
   "Center": {
-    "cause": "Radial non-uniformity concentrated at the wafer centre: film thickness or polish-rate centre-to-edge profile out of spec",
+    "cause": "Radial non-uniformity at the wafer centre: CMP uniformity problem, or irregular RF operation / unusual liquid flow",
     "machine": "CMP polisher or CVD deposition chamber",
     "tool_family": "CMP",
     "recommended_action": "Check CMP pad/head pressure profile and deposition uniformity monitors for the affected tool",
-    "source": "Triage heuristic; no citation yet"
+    "source": "KAIST College of Engineering research webzine (centre circular pattern from a CMP uniformity problem), https://breakthroughs.kaist.ac.kr/sub02/view/id/219; arXiv 2607.00961, root-cause table adapted from Shin et al. 2024 (irregular RF operation or unusual liquid flow), https://arxiv.org/abs/2607.00961. Not read in full."
   },
   "Donut": {
     "cause": "Ring-shaped failures at mid radius: temperature or gas-flow non-uniformity forming an annulus",
@@ -26,11 +26,11 @@
     "source": "Triage heuristic; no citation yet"
   },
   "Edge-Ring": {
-    "cause": "Failures around the full wafer edge: plasma or thermal non-uniformity at the edge (edge ring / focus ring wear)",
-    "machine": "Plasma etch chamber",
+    "cause": "Failures around the full wafer edge: edge temperature or plasma non-uniformity (RTP temperature regulation, edge etch/deposition)",
+    "machine": "Plasma etch chamber (edge/focus ring) or RTP thermal chamber",
     "tool_family": "ETCH",
     "recommended_action": "Hold the tool; inspect focus/edge ring wear and edge etch-rate uniformity",
-    "source": "Triage heuristic; no citation yet"
+    "source": "arXiv 2607.00961, root-cause table adapted from Shin et al. 2024 (anomalous temperature regulation during RTP or cold process), https://arxiv.org/abs/2607.00961. Not read in full. The etch link is our triage assumption."
   },
   "Loc": {
     "cause": "A localised cluster of failures away from the edge: particle or contamination event",
