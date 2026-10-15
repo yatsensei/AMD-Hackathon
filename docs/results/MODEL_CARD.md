@@ -32,6 +32,8 @@
 | **v0-ens3 (3 CNNs) — current v1 candidate** | **0.912 (0.896–0.922)** | 98.1% | 0.950 / 0.962 | 9.5 |
 | Classical baseline (features + gradient boosting) | 0.865 (0.847–0.878) | — | 0.950 / 0.881 | <1 |
 
+**Tried and not adopted** (validation, CPU): ResNet-18 (0.905), 60 epochs (0.906), small rotation augmentation (3 seeds: 0.902), focal loss (0.902), nearest-neighbour input encoding (0.906), a 5-CNN ensemble (0.910, not better than 3), and a 3-CNN + ResNet ensemble (0.910). Single small CNNs over 5 seeds: 0.906 ± 0.003. Recommended v1: **v0-ens3**.
+
 - **Accuracy is not the headline.** "Always none" would already score about 85%. Macro-F1 weights all 9 patterns equally.
 - **Per class (v0):** Edge-Ring 0.98, Near-full 0.97, Center 0.95, Donut 0.88, Random 0.88, Edge-Loc 0.87, Scratch 0.80, Loc 0.79, none 0.99.
 - **Calibration:** expected calibration error on predicted defects is 0.010; 1.1% of wafers are routed to review.
