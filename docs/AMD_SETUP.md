@@ -1,5 +1,7 @@
 # Running the CNN on AMD — step by step
 
+> **Status (15 Oct): the team has no GPU credits, so the CNN is trained on CPU** (`configs/e0_cpu.yaml` and `configs/cpu/`). See `docs/HANDOFF.md` and `docs/results/OVERNIGHT.md`. This page stays in case an AMD GPU becomes available: the same code runs there unchanged and would make "trained on AMD" true.
+
 Everything that trains or evaluates the CNN runs on the AMD GPU. You do the AMD side. The code is already written and tested, so these steps are mostly "run this, check that, send back the files".
 
 There are two ways in, depending on what the AMD access gives you:

@@ -86,8 +86,8 @@
 - We may choose our own models, frameworks and tools, as long as they're compatible.
 
 **Our AMD usage (keep this true and documented):**
-- CNN training on AMD Instinct MI300X with PyTorch on ROCm (Phase 2, logged in `env.json`)
-- Qwen3 served with vLLM on AMD (Phase 5) — the agent in the live demo calls this endpoint
+- ~~CNN training on AMD Instinct MI300X with PyTorch on ROCm~~: **no GPU credits; the CNN is trained on CPU. Do not claim AMD training** (15 Oct)
+- **The agent's LLM via AMD Token Factory** (free models on AMD GPUs; Phase 5): the AMD component of the live demo
 - Benchmark numbers (training time, inference speed on AMD) for the slides
 
 ### 4.2 Event FAQ (new on the page — verify with the team)
@@ -190,4 +190,5 @@ Prize: AirPods 5 for every team member, for the best solution. Judged on three c
 |---|---|---|
 | 14 Oct | brief | Created from the event page. Prize pool now shows $17,000+ (was $12,000+). New FAQ: event hosted on notebooks.amd.com/tokenfactory, no billing, $100 credit not required |
 | 14 Oct | team | Track 1 chosen; Evolus partner track skipped |
+| 15 Oct | team | No AMD cloud GPU credits: CNN trained on CPU; AMD component = agent LLM on Token Factory. MIT `LICENSE` added |
 | 14 Oct | team | Token Factory = **LLM API only**: one shared team key `rc-...` for free OpenAI/Anthropic-compatible models on AMD GPUs (30 RPM, 8 concurrent, daily cap, team-wide). The agent uses it, which is our live AMD component. **No GPU instances** in our dashboard: CNN training needs AMD Developer Cloud (the $100 credit) or a teammate's AMD GPU; otherwise it trains on CPU and the pitch must not claim AMD training |

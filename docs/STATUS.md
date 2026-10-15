@@ -31,4 +31,8 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | Tier 1 sweep + E-LEAK + E-COMB | Anisha / Akein | 🟡 | Single-seed CPU screening done (E-LEAK: no inflation; E1, E2, E3b: n.s.; TTA +0.009). Needs 5 seeds on an AMD GPU |
 | Freeze `models/v1` | Anisha / Akein | ❌ | |
 | Final test evaluation, once | Anisha / Akein | ❌ | |
-| Tier 2 (E9, E10, E11, E8, E4, E7) | Anisha / Akein | ❌ | |
+| Tier 2 (E9, E10, E11, E8, E4, E7) | Anisha / Akein | ❌ | Low priority |
+| Explainability check (spec 8.4) | Claude | ✅ | Box IoU≥0.3: 97/99/100% (Scratch/Loc/Edge-Loc, synthetic); `docs/results/v0_val/gradcam_examples.png` |
+| Teammate hand-off (`docs/HANDOFF.md`, split file, data access) | Claude | ✅ | |
+| Model card | Claude | 🟡 | Draft; test numbers pending the final run |
+| Accuracy improvements (ResNet-18, 60 epochs, bigger ensemble) | Claude | 🟡 | Running on CPU |
