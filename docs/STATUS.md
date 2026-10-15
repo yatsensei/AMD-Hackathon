@@ -36,3 +36,12 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | Teammate hand-off (`docs/HANDOFF.md`, split file, data access) | Claude | ✅ | |
 | Model card | Claude | 🟡 | Draft; test numbers pending the final run |
 | Accuracy improvements (ResNet-18, 60 epochs, bigger ensemble) | Claude | 🟡 | Running on CPU |
+
+## Phase 4 — factory simulation (Nasser & Shefali Cat)
+| Item | Owner | Status | Notes |
+|---|---|---|---|
+| `wafer/factory/root_causes.json` (9 patterns) | Nasser / Shefali Cat | 🟡 | Causes/machines drafted; `source` citations to confirm from the notebook |
+| `build_stream` + `scripts/make_stream.py` | Nasser / Shefali Cat | ✅ | Val wafers, ETCH-04 Edge-Ring excursion from LOT-010; `streams/stream_val_unscored.csv` committed |
+| `check_alert`, `lots_caught_early`, `estimate_impact` | Nasser / Shefali Cat | ✅ | `tests/test_factory.py` |
+| Scored stream with CNN predictions | Nasser / Shefali Cat | ❌ | Needs `data/interim/labeled.pkl`: run `python scripts/make_stream.py` |
+| Rebuild stream from test split | Nasser / Shefali Cat | ❌ | Only after the final test evaluation |
