@@ -632,6 +632,7 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | Seeds | E0 vs E3b with 3 seeds each (CPU): 0.9055 ± 0.0040 vs 0.9020 ± 0.0053, so rotation is dropped; seed-0's +0.007 was noise. Seed SD ≈ 0.004–0.005 macro-F1 | Multi-seed check before adopting a change (spec 6.2 selection rule) |
 | 14 Oct | E6 result | 3-seed E0 ensemble (`models/v0-ens3`, no TTA): val 0.912, +0.010 vs v0 (significant), ties v0-tta at 9.5 vs 27 ms/wafer. Leading v1 candidate | Ensembles beat TTA on latency for the same gain |
 | 15 Oct | Explainability | Box = full fail-die cluster chosen by Grad-CAM heat (≥ 0.25 × peak), CAM on the last **8×8** stage (was: hot region ∩ fails on a ≥16×16 layer); Edge-Ring gets the wafer box; overlay alpha scales with heat | Synthetic insertions (300 each): box IoU ≥ 0.3 went from 98/73/37% to **97/99/100%** (Scratch/Loc/Edge-Loc). On real wafers, the 16×16 layer's heat often sat on the wrong cluster; the 32×32 layer was worse (IoU ≥ 0.3: 46/8/95%) |
+| 15 Oct | E3 result | ResNet-18 (stride-2 stem, CPU, 1 seed): val 0.905 vs small CNN 3-seed mean 0.906 (paired Δ +0.003, CI −0.012 to +0.016, n.s.); 4× slower to train, ~6× slower per wafer. Adding it to the 3-CNN ensemble *lowers* val macro-F1 (0.910 vs 0.912). Dropped | Higher raw score (0.869 vs 0.855) disappears after calibration |
 | 14 Oct | Phase 2 impl | Noise-robustness slice flips pixels of the 64×64 encoding, not raw dies | Evaluation works from the npz; documented as pixel-level |
 | | | | |
 
