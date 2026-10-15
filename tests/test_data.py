@@ -414,3 +414,19 @@ def test_real_split_assertions():
     params = json.loads((REAL_META.parent / "split_params.json").read_text())
     splitlib.check_split(meta, min_count=params["min_count"], max_rel_dev=params["max_rel_dev"])
     assert not preprocess.cross_split_duplicates(meta, params["dup_min_minority"]).any()
+
+
+def test_committed_split_file_matches_metadata():
+    from wafer.data.access import SPLIT_FILE, load_split, wafers_for_stream
+    s = load_split()
+    assert len(s) == 172_950 and set(s["split"]) == {"train", "val", "test"}
+    assert s.groupby("lotName")["split"].nunique().max() == 1
+    w = wafers_for_stream("val")
+    assert (w["split"] == "val").all() and len(w) == (s["split"] == "val").sum()
+    with pytest.raises(ValueError):
+        wafers_for_stream("train")
+    if REAL_META.exists():
+        meta = pd.read_parquet(REAL_META)
+        assert (meta["uid"].to_numpy() == s["uid"].to_numpy()).all()
+        assert (meta["split"].to_numpy() == s["split"].to_numpy()).all()
+    assert SPLIT_FILE.exists()

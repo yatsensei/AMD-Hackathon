@@ -1,0 +1,30 @@
+{
+  "model": "models/v0",
+  "note": "synthetic patterns pasted on clean val wafers; sanity numbers, not headline",
+  "results": {
+    "Scratch": {
+      "inserted": 300,
+      "classified_as_intended": 300,
+      "classification_rate": 1.0,
+      "pointing_game": 0.9166666666666666,
+      "median_box_iou": 1.0,
+      "box_iou_ge_0.3": 0.97
+    },
+    "Loc": {
+      "inserted": 300,
+      "classified_as_intended": 298,
+      "classification_rate": 0.9933333333333333,
+      "pointing_game": 0.7348993288590604,
+      "median_box_iou": 0.875,
+      "box_iou_ge_0.3": 0.9932885906040269
+    },
+    "Edge-Loc": {
+      "inserted": 300,
+      "classified_as_intended": 300,
+      "classification_rate": 1.0,
+      "pointing_game": 0.91,
+      "median_box_iou": 0.9545454545454546,
+      "box_iou_ge_0.3": 1.0
+    }
+  }
+}

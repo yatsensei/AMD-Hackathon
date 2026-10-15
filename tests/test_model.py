@@ -25,13 +25,13 @@ def _circle_base(b=4, s=64, seed=0):
 
 @pytest.mark.parametrize("name", MODELS)
 @pytest.mark.parametrize("encoding", ["area", "nearest", "area_r"])
-def test_models_map_to_logits_and_expose_16px_cam_layer(name, encoding):
+def test_models_map_to_logits_and_expose_8px_cam_layer(name, encoding):
     net = build_model({"model": name, "encoding": encoding}).eval()
     seen = {}
     net.cam_layer.register_forward_hook(lambda m, i, o: seen.__setitem__("shape", o.shape))
     out = net(torch.rand(2, ENCODING_CHANNELS[encoding], 64, 64))
     assert out.shape == (2, len(CLASSES))
-    assert seen["shape"][-1] >= 16 and seen["shape"][-2] >= 16
+    assert seen["shape"][-1] == 8 and seen["shape"][-2] == 8
     names = list(net.state_dict())
     assert not any(k.startswith("cam_layer") for k in names), "cam_layer must not duplicate weights"
 

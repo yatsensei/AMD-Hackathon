@@ -474,8 +474,8 @@ python -m wafer.evaluate --final --model models/v1 \
 ## 8. Phase 2 — Explainability (`wafer/explain.py`)
 
 YOLO detection can't be trained on WM-811K because it has no bounding boxes. We get localisation through **attribution**. Call it that in the pitch, not "detection".
-1. **Grad-CAM** for the predicted class on the model's `cam_layer` (≥ 16×16, Section 5.5). ReLU, normalise to [0,1], upsample to the original wafer size.
-2. **Bounding box:** threshold the heatmap at 0.5 × max, intersect with fail dies (`map == 2`), apply a 3×3 morphological closing (so a dotted scratch joins into one piece), take the largest connected component (`cv2.connectedComponentsWithStats`), and return its box in **original wafer coordinates**. For `none`, return no box. For `Random` and `Near-full`, return the wafer's bounding box, since those patterns cover the whole wafer.
+1. **Grad-CAM** for the predicted class on the model's `cam_layer`, its **last 8×8 stage** (class-specific). ReLU, normalise to [0,1], upsample to the original wafer size.
+2. **Bounding box:** keep fail dies whose heat is ≥ 0.25 × peak, group them into clusters (3×3 closing, so a dotted scratch or sparse arc is one cluster), and return the **full** box of the cluster with the most heat, in **original wafer coordinates**. The heatmap *chooses* the cluster; the cluster's own extent sets the box. For `none`, return no box. For `Random`, `Near-full` and `Edge-Ring`, return the wafer's bounding box, since those patterns span the wafer.
 3. For an ensemble or TTA, compute Grad-CAM on the single best member (it's for explanation, not scoring).
 4. **Synthetic-insertion benchmark** (`scripts/bench_localisation.py`, val wafers only): take 300 val `none` wafers and paste a known synthetic pattern with a known box: a 1-die-wide line (Scratch-like), a filled blob of fail dies (Loc-like), or an arc at the edge (Edge-Loc-like). Report, **on the insertions the model classifies as the intended class**: classification rate, pointing-game hit rate (heatmap max inside the true box), and median box IoU. Use it to choose `cam_layer`. Synthetic patterns aren't the real distribution, so these are sanity numbers, not headline numbers.
 
@@ -552,7 +552,7 @@ Sections: intended use (assist yield engineers; not an autonomous decision-maker
 - npz rows align with metadata `uid`s
 
 **`test_model.py`**
-- every CNN in the factory maps `(B,C,64,64)` → `(B,9)` and its `cam_layer` output is ≥ 16×16
+- every CNN in the factory maps `(B,C,64,64)` → `(B,9)` and its `cam_layer` output is 8×8
 - one training step on a tiny batch reduces loss (smoke test)
 - augmentation keeps the wafer mask and the label unchanged; D4 transforms are exact (applying all 8 and inverting returns the original); die-flip keeps `pass_frac ≥ 0`
 - `train_prior.json` sums to 1 and matches a hand computation on a toy sampler
@@ -631,6 +631,7 @@ Append one line per decision: `date · who · decision · reason`. Agents must a
 | 14 Oct | Screening results | E3b rotation +0.007 (n.s.), E2 focal +0.001 (n.s.), **E5 TTA +0.009 (paired CI +0.005 to +0.014, significant)** at 27 ms/wafer CPU. v1 candidate: E0 (+ rotation if 5 seeds confirm) served with TTA | Single-seed CPU screening; confirm with 5 seeds on an AMD GPU |
 | 14 Oct | Seeds | E0 vs E3b with 3 seeds each (CPU): 0.9055 ± 0.0040 vs 0.9020 ± 0.0053, so rotation is dropped; seed-0's +0.007 was noise. Seed SD ≈ 0.004–0.005 macro-F1 | Multi-seed check before adopting a change (spec 6.2 selection rule) |
 | 14 Oct | E6 result | 3-seed E0 ensemble (`models/v0-ens3`, no TTA): val 0.912, +0.010 vs v0 (significant), ties v0-tta at 9.5 vs 27 ms/wafer. Leading v1 candidate | Ensembles beat TTA on latency for the same gain |
+| 15 Oct | Explainability | Box = full fail-die cluster chosen by Grad-CAM heat (≥ 0.25 × peak), CAM on the last **8×8** stage (was: hot region ∩ fails on a ≥16×16 layer); Edge-Ring gets the wafer box; overlay alpha scales with heat | Synthetic insertions (300 each): box IoU ≥ 0.3 went from 98/73/37% to **97/99/100%** (Scratch/Loc/Edge-Loc). On real wafers, the 16×16 layer's heat often sat on the wrong cluster; the 32×32 layer was worse (IoU ≥ 0.3: 46/8/95%) |
 | 14 Oct | Phase 2 impl | Noise-robustness slice flips pixels of the 64×64 encoding, not raw dies | Evaluation works from the npz; documented as pixel-level |
 | | | | |
 

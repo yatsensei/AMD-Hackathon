@@ -15,7 +15,7 @@ def _block(cin: int, cout: int) -> nn.Sequential:
 
 class SmallCNN(nn.Module):
     def __init__(self, in_chans: int = 3, num_classes: int = 9, widths=(32, 64, 128, 256),
-                 dropout: float = 0.3, n_aux: int = 0, cam_block: int = 3):
+                 dropout: float = 0.3, n_aux: int = 0, cam_block: int = 4):
         super().__init__()
         c = [in_chans, *widths]
         self.blocks = nn.ModuleList(_block(c[i], c[i + 1]) for i in range(4))
@@ -26,7 +26,9 @@ class SmallCNN(nn.Module):
     @property
     def cam_layer(self) -> nn.Module:
         """Block `cam_block` (1-based), before its pool: 64, 32, 16, 8 px for blocks 1..4.
-        A property, not an attribute, so the weights are not registered twice."""
+        Default 4 (8x8, the most class-specific): the heatmap only has to *choose* the fail-die
+        cluster, whose own extent sets the box (spec 8 / Decisions Log). A property, not an
+        attribute, so the weights are not registered twice."""
         return self.blocks[self._cam_block - 1]
 
     def features(self, x: torch.Tensor) -> torch.Tensor:

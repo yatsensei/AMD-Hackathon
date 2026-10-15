@@ -46,10 +46,13 @@ def render_heatmap(map2d: np.ndarray, heatmap: np.ndarray, bbox=None, alpha: flo
         raise ValueError(f"heatmap shape {h.shape} != map shape {base.shape[:2]}")
     colour = cv2.applyColorMap(np.rint(np.clip(h, 0, 1) * 255).astype(np.uint8), cv2.COLORMAP_JET)
     colour = cv2.cvtColor(colour, cv2.COLOR_BGR2RGB)
-    inside = (np.asarray(map2d) > 0)[..., None]
-    out = np.where(inside, (1 - alpha) * base + alpha * colour, base)
+    # Heat fades in with its strength, so low-heat areas still show the wafer's own pass/fail dies.
+    a = (alpha * np.clip(h, 0, 1))[..., None] * (np.asarray(map2d) > 0)[..., None]
+    out = (1 - a) * base + a * colour
     out = np.clip(np.rint(out), 0, 255).astype(np.uint8)
-    if bbox is not None:
+    if bbox is not None:                       # drawn one pixel outside the box so it frames the dies
         x0, y0, x1, y1 = (int(v) for v in bbox)
-        cv2.rectangle(out, (x0, y0), (x1, y1), (255, 255, 255), 1)
+        h_, w_ = out.shape[:2]
+        cv2.rectangle(out, (max(x0 - 1, 0), max(y0 - 1, 0)), (min(x1 + 1, w_ - 1), min(y1 + 1, h_ - 1)),
+                      (255, 255, 255), 1)
     return out
