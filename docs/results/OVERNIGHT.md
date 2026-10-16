@@ -1,6 +1,6 @@
 # Overnight report — Wed 14 Oct 2026
 
-**TL;DR:** Phase 1 ran on the real WM-811K. **Best model: `models/v0-ens3`, val macro-F1 0.912 at 9.5 ms/wafer.** A first CNN, `models/v0`, is trained, calibrated, evaluated on validation and committed: **val macro-F1 0.902 (95% CI 0.885–0.913), defect recall 0.95 at 0.96 precision, 4 ms/wafer on CPU.** Serving it with 8-way rotation/flip averaging (`models/v0-tta`) gives **0.911** at 27 ms/wafer. The CNN beats a strong classical baseline by a significant margin. Two spec assumptions turned out wrong on real data, and both are logged.
+**TL;DR:** Phase 1 ran on the real WM-811K. **Best model: `models/v0-ens3`, val macro-F1 0.912 at 9.5 ms/wafer.** Day 2 (bottom of this file): ResNet-18, 60 epochs and a 5-CNN ensemble all failed to beat it, so it's the recommended v1. A first CNN, `models/v0`, is trained, calibrated, evaluated on validation and committed: **val macro-F1 0.902 (95% CI 0.885–0.913), defect recall 0.95 at 0.96 precision, 4 ms/wafer on CPU.** Serving it with 8-way rotation/flip averaging (`models/v0-tta`) gives **0.911** at 27 ms/wafer. The CNN beats a strong classical baseline by a significant margin. Two spec assumptions turned out wrong on real data, and both are logged.
 
 > **Everything here was trained on CPU** (Claude's cloud environment, 4-core Xeon, bf16), because Token Factory has no GPU instances. **Do not say "trained on AMD" about these models.** All numbers are **validation**: calibration and thresholds were fitted on the same set, so they're slightly optimistic. The test split is still untouched.
 
@@ -79,3 +79,36 @@ python -m wafer.train --config configs/e0_cpu.yaml        # ~55 min on 4 cores
 python -m wafer.export --runs experiments/e0_cpu_s0_* --version v0 && python -m wafer.evaluate --model models/v0
 ```
 Screening configs: `configs/cpu/`. Comparison table: `scripts/compare_runs.py` → `docs/results/screening_vs_e0.md`. All runs: `docs/results/leaderboard.csv`.
+
+
+---
+
+## Day 2 (15 Oct): accuracy improvements, all on CPU, all on validation
+
+I tried every improvement idea we had. **None beats the 3-CNN ensemble**, so the small CNN at 30 epochs, averaged over 3 seeds, is close to the ceiling of this setup.
+
+| Experiment | Val macro-F1 | vs reference | Verdict |
+|---|---|---|---|
+| Small CNN, 30 epochs: **5 seeds** (reference) | 0.906 ± 0.003 (0.902–0.910) | — | Very consistent across seeds |
+| ResNet-18 (11 M parameters, 4× slower to train) | 0.905 | +0.003 vs seed 0, n.s. | No gain; dropped |
+| 3 CNNs + ResNet-18 ensemble | 0.910 | below ens3 (0.912) | ResNet adds nothing |
+| Small CNN, **60 epochs** | 0.906 | +0.004 vs seed 0, n.s. | No gain for twice the time |
+| **3-CNN ensemble (`models/v0-ens3`)** | **0.912** | +0.010 vs v0, significant | **Best: recommended v1** |
+| 5-CNN ensemble | 0.910 | −0.002 vs ens3 (CI −0.010 to +0.005), n.s. | Saturated at 3 members; slower |
+
+**Why the bigger models didn't help:**
+- Before calibration they *did* look better: raw top-prediction macro-F1 was 0.869 for ResNet and 0.865 for 60 epochs, versus about 0.85.
+- Calibration (undoing the class rebalancing, plus temperature) recovers that gap for the small CNN, so after calibration everything lands at about 0.905.
+- The remaining errors are mostly Scratch and Loc wafers called `none`. Some of those are likely label noise, and about 0.91 is probably close to what this data allows at 64×64.
+
+**Explainability (also day 2):**
+- The defect box is now drawn around the whole fail-die cluster that Grad-CAM picks.
+- On synthetic insertions it overlaps the true defect for 97% of scratches, 99% of blobs and 100% of edge arcs (previously 98/73/37%).
+- Real-wafer examples: `docs/results/v0_val/gradcam_examples.png`.
+
+**Recommendation: freeze `models/v0-ens3` as v1** (3 × small CNN, val macro-F1 0.912). Then run the single final test evaluation when you're ready:
+```bash
+python scripts/e0b_classical.py                                      # regenerates the baseline CSV (experiments/ isn't in git)
+python -m wafer.evaluate --final --model models/v0-ens3 --comparators models/v0 experiments/e0b/predictions.csv
+```
+(Or re-export the same runs as `--version v1` first, so the API's default model and `model_version` say v1.)
