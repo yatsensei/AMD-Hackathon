@@ -40,6 +40,8 @@ def main(argv=None) -> int:
     p.add_argument("--no-verify-model", action="store_true",
                    help="Skip GET /v1/models check (offline / mocked)")
     p.add_argument("--json", action="store_true", help="Print full result JSON")
+    p.add_argument("--debug", action="store_true",
+                   help="Print timing diagnostics and model/classifier/as_of footer on stderr")
     a = p.parse_args(argv)
 
     if a.score_stream:
@@ -94,12 +96,36 @@ def main(argv=None) -> int:
             print(f"error: {result.get('error')}", file=sys.stderr)
             return 1
         print(result.get("answer") or "")
-        _print_timing_summary(result, file=sys.stderr)
+        _print_evidence_warnings(result, file=sys.stderr)
+        if a.debug:
+            _print_timing_summary(result, file=sys.stderr)
     return 0 if result.get("ok", True) else 1
 
 
+def _print_evidence_warnings(result: dict, file=sys.stderr) -> None:
+    """Surface important evidence / completeness warnings (not timings)."""
+    if result.get("finish_reason") == "length":
+        print("warning: final answer may be truncated (finish_reason=length)", file=file)
+    for item in result.get("tool_trace") or []:
+        raw = item.get("result") or ""
+        try:
+            payload = json.loads(raw) if isinstance(raw, str) else raw
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        if payload.get("ok") is False and payload.get("error"):
+            print(f"warning: tool {item.get('tool')}: {payload['error']}", file=file)
+        note = payload.get("alerts_note") or payload.get("classifier_note")
+        if note and payload.get("alerts_status") == "unavailable_no_predictions":
+            print(f"warning: {note}", file=file)
+        warnings = payload.get("source_warnings") or []
+        if warnings and item.get("tool") == "lookup_root_cause":
+            print(f"warning: root-cause source_warnings={warnings}", file=file)
+
+
 def _print_timing_summary(result: dict, file=sys.stderr) -> None:
-    """Human-readable timing breakdown (no secrets)."""
+    """Human-readable timing breakdown (no secrets). Only used with --debug."""
     t = result.get("timings") or {}
     print(f"\n[model={result.get('llm_model')}; classifier={result.get('classifier')}; "
           f"as_of={result.get('as_of')}]", file=file)
