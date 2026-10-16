@@ -65,5 +65,6 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Ph
 ## Phase 6–7 — pending
 | Item | Status | Notes |
 |---|---|---|
-| Streamlit dashboard | ❌ | Use `WaferAgent.from_env` / `wafer.classifiers` |
+| Dashboard (`dashboard/`, FastAPI + static UI) | ✅ | Operations / Copilot / Model quality; see `dashboard/README.md` |
+| YOLO second opinion in the dashboard | ⏳ | Shown automatically once `get_classifier("yolo")` stops raising |
 | End-to-end demo polish | ❌ | stream → CNN → alert → agent → UI |
