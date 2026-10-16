@@ -13,10 +13,13 @@ import json
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from wafer.env import REPO_ROOT  # noqa: E402
-from wafer.factory import add_predictions, build_stream, check_alert, estimate_impact, lots_caught_early  # noqa: E402
+from wafer.factory import (add_predictions, build_stream, check_alert, impact_from_alert,  # noqa: E402
+                           lots_caught_early)
 from wafer.factory.impact import WAFER_VALUE  # noqa: E402
 
 
@@ -35,6 +38,7 @@ def main(argv=None):
     p.add_argument("--wafer-value", type=float, default=WAFER_VALUE)
     p.add_argument("--mock", action="store_true", help="use wafer.infer_mock instead of the CNN")
     p.add_argument("--no-predict", action="store_true", help="write the unscored stream and stop")
+    p.add_argument("--classifier", default="cnn", help="backend name recorded on scored rows (cnn)")
     p.add_argument("--out", default=None, help="default: streams/stream_<split>.csv")
     a = p.parse_args(argv)
 
@@ -48,17 +52,24 @@ def main(argv=None):
         stream.to_csv(out, index=False)
         print(f"wrote {out} ({len(stream)} wafers, {stream.lot_id.nunique()} lots, no predictions)")
         return stream, []
-    clf = None
     if a.mock:
-        from wafer.infer_mock import classify_batch as clf
-    stream = add_predictions(stream, classify_batch=clf)
+        from wafer.classifiers.cnn import CnnClassifier
+        from wafer.infer_mock import classify, classify_batch
+        backend = CnnClassifier(classify_fn=classify, classify_batch_fn=classify_batch)
+        stream = add_predictions(stream, classifier=backend)
+    else:
+        from wafer.classifiers import get_classifier
+        stream = add_predictions(stream, classifier=get_classifier(a.classifier))
     stream.to_csv(out, index=False)
-    print(f"wrote {out} ({len(stream)} wafers, {stream.lot_id.nunique()} lots, model {stream.model_version.iloc[0]})")
+    print(f"wrote {out} ({len(stream)} wafers, {stream.lot_id.nunique()} lots, "
+          f"classifier={stream.classifier.iloc[0]}, model={stream.model_version.iloc[0]})")
 
     alerts = check_alert(stream, window_hours=a.window_hours, threshold=a.threshold)
+    as_of = str(pd.to_datetime(stream["timestamp"]).max())
     for al in alerts:
-        al["lots_caught_early"] = lots_caught_early(stream, al)
-        al["impact"] = estimate_impact(al["lots_caught_early"], wafer_value=a.wafer_value, wafers_per_lot=a.lot_size)
+        al["subsequent_lots_observed"] = lots_caught_early(stream, al)
+        al["impact"] = impact_from_alert(stream, al, as_of=as_of, wafer_value=a.wafer_value,
+                                         wafers_per_lot=a.lot_size)
         al["uids"] = f"{len(al['uids'])} wafers"
     print(json.dumps(alerts, indent=2))
     return stream, alerts

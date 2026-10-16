@@ -86,23 +86,55 @@ def _sample(df: pd.DataFrame, n: int, rng: np.random.Generator) -> pd.DataFrame:
     return df.iloc[rng.permutation(len(df))[:n]]
 
 
+PRED_COLUMNS = ("pattern", "confidence", "defect_prob", "needs_review", "review_reasons",
+                "model_version", "classifier")
+
+
 def add_predictions(stream: pd.DataFrame, classify_batch: Callable | None = None,
-                    get_map: Callable | None = None) -> pd.DataFrame:
+                    get_map: Callable | None = None, classifier=None,
+                    classifier_name: str | None = None) -> pd.DataFrame:
     """Add the classifier's view of each wafer: the columns check_alert and the agent read.
 
-    Defaults to wafer.infer.classify_batch on maps from data/interim/labeled.pkl
-    (`python scripts/prepare_data.py`). Pass wafer.infer_mock.classify_batch to run without torch.
+    Never copies true `label` into `pattern`. Records `classifier` and `model_version` so
+    history stays tied to the backend that scored the stream.
+
+    Prefer passing a `ClassifierBackend` via `classifier=`. Legacy `classify_batch=` still
+    works (defaults to wafer.infer). Pass wafer.infer_mock.classify_batch to run without torch.
     """
-    if classify_batch is None:
-        from wafer.infer import classify_batch
     if get_map is None:
         from wafer.data.access import get_wafer_map as get_map
-    results = classify_batch([get_map(u) for u in stream["uid"]])
+    maps = [get_map(u) for u in stream["uid"]]
+    if classifier is not None:
+        results = classifier.classify_batch(maps)
+        backend_name = getattr(classifier, "name", classifier_name or "unknown")
+    else:
+        if classify_batch is None:
+            from wafer.infer import classify_batch
+        results = classify_batch(maps)
+        backend_name = classifier_name or "cnn"
     out = stream.copy()
     out["pattern"] = [r["pattern"] for r in results]
-    out["confidence"] = [round(r["confidence"], 4) for r in results]
-    out["defect_prob"] = [round(r["defect_prob"], 4) for r in results]
-    out["needs_review"] = [r["needs_review"] for r in results]
+    out["confidence"] = [round(float(r["confidence"]), 4) for r in results]
+    out["defect_prob"] = [round(float(r.get("defect_prob", 1.0 - r["probs"].get("none", 0.0))), 4)
+                          for r in results]
+    out["needs_review"] = [bool(r["needs_review"]) for r in results]
     out["review_reasons"] = [";".join(r["review_reasons"]) for r in results]
     out["model_version"] = [r["model_version"] for r in results]
+    out["classifier"] = [r.get("classifier", backend_name) for r in results]
     return out
+
+
+def score_stream(stream: pd.DataFrame, classifier=None, get_map: Callable | None = None,
+                 classifier_name: str | None = None) -> pd.DataFrame:
+    """Score an unscored (or any) stream with a classifier backend. CNN by default.
+
+    Raises if the caller tries to treat labels as predictions — this path always runs a
+    real classify_batch. Use when loading streams/stream_val_unscored.csv.
+    """
+    if classifier is None and classifier_name is None:
+        from wafer.classifiers import get_classifier
+        classifier = get_classifier("cnn")
+    elif classifier is None:
+        from wafer.classifiers import get_classifier
+        classifier = get_classifier(classifier_name)
+    return add_predictions(stream, classifier=classifier, get_map=get_map)

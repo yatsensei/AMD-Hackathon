@@ -51,7 +51,11 @@ def check_alert(stream_df: pd.DataFrame, window_hours: float = 24, threshold: in
 
 
 def lots_caught_early(stream_df: pd.DataFrame, alert: dict) -> int:
-    """Lots that would have started on the alert's tool after it fired: the lots a tool hold saves."""
+    """Count subsequent lots on the alert's tool whose lot start is after `fired_at`.
+
+    This is an observed-count helper for the stream slice you pass in (typically
+    timestamp <= as_of). It is not proof that a hold happened or that money was saved.
+    """
     df = stream_df[stream_df["tool_id"] == alert["tool_id"]]
     starts = pd.to_datetime(df.groupby("lot_id")["timestamp"].min())
     return int((starts > pd.Timestamp(alert["fired_at"])).sum())

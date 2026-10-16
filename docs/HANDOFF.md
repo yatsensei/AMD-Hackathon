@@ -25,6 +25,15 @@ e = explain(wafer_map)             # {"heatmap": HxW float32 in [0,1], "bbox": [
 - Invalid input (wrong values, empty map) raises `ValueError` with a clear message.
 - `wafer/infer_mock.py` has the same functions and keys if you need a stand-in.
 
+**Pluggable backends (agent + dashboard):** prefer `wafer.classifiers` so YOLO can be added later without changing call sites:
+```python
+from wafer.classifiers import get_classifier
+clf = get_classifier()                 # cnn by default ($WAFER_CLASSIFIER)
+r = clf.classify(wafer_map)            # includes classifier="cnn", model_version, needs_review, ...
+# get_classifier("yolo") raises ClassifierNotAvailableError — never silently falls back to CNN
+```
+CNN keeps its own calibration / `needs_review` rules. Do not assume those thresholds apply to YOLO.
+
 **Agent (Phase 5):**
 - When `needs_review` is True, **say the model is unsure** and use `review_reasons`:
   - `low_confidence`: below the calibrated threshold;
@@ -63,6 +72,41 @@ lookup_root_cause("Edge-Ring")                                  # from wafer/fac
 ```
 - Scenario: 20 lots of 25, lot every 2 h, wafer every 3 min; lots 1–9 rotate over ETCH-01..04; from LOT-010 every lot runs on ETCH-04 with real Edge-Ring wafers (maps untouched).
 - Healthy lots are 2% defects (`baseline_defect_rate`). At the split's natural ~15%, the 3-in-24h rule fires on healthy tools before the excursion in 50/50 seeds (true labels as predictions); at 2%, in 1/100.
+
+## 3b. Agent (Phase 5)
+
+Requires `openai` and `python-dotenv` (`pip install -r requirements.txt`). Copy `.env.example` → `.env` and set:
+
+| Variable | Purpose |
+|---|---|
+| `AMD_API_KEY` | Token Factory key (`rc-...`). Optional legacy alias: `RADEON_API_KEY` |
+| `AMD_BASE_URL` | e.g. `https://developer.amd.com.cn/radeon/api/v1` |
+| `AMD_MODEL` | Model id from `GET $AMD_BASE_URL/models` — do not hard-code a name |
+| `WAFER_CLASSIFIER` | `cnn` (default). `yolo` fails with “YOLO is not available yet” |
+| `WAFER_MODEL_DIR` | Optional CNN export dir |
+
+```bash
+# Score the committed unscored val stream with the CNN (needs labeled.pkl + a model):
+python -m wafer.agent --score-stream streams/stream_val_unscored.csv -o streams/stream_val.csv
+
+# Ask a question (replay clock = as_of; history never sees future events):
+python -m wafer.agent -q "What is happening on ETCH-04?" \
+  --stream streams/stream_val.csv --as-of "2026-10-12 18:00"
+```
+
+```python
+from wafer.agent import WaferAgent
+import pandas as pd
+df = pd.read_csv("streams/stream_val.csv")
+agent = WaferAgent.from_env(df, as_of="2026-10-12 18:00")
+print(agent.ask("Summarise the excursion and value at risk.")["answer"])
+```
+
+Tools: `classify_wafer`, `lookup_root_cause`, `check_lot_history`, `estimate_impact`.
+- Alerts need a scored `pattern` column; without predictions, alerts are **unavailable** (labels are never used as predictions).
+- `estimate_impact` reports **subsequent lots observed since the alert** (as of `as_of`) under demo $ assumptions — not proven savings. Zero subsequent lots ≠ zero total exposure and ≠ losses prevented. `affected_lot_exposure` / `future_hypothetical_exposure` appear only when calculated. Do not claim the alert saved money unless `intervention_recorded` is true.
+- Root-cause replies keep `source` and `source_warnings` (e.g. unverified / not read in full).
+- Scored streams record `classifier` + `model_version`; do not present CNN history as YOLO history.
 
 ## 4. YOLO benchmark (Phase 3)
 - PNG folders: `python scripts/prepare_data.py --yolo` writes `yolo_data/{train,val,test}/<class>/<uid>.png`. Defaults to the area-fraction rendering; add `--yolo-encoding nearest` for the plain 0/1/2 colours.

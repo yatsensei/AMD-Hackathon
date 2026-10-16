@@ -35,10 +35,7 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | Explainability check (spec 8.4) | Claude | ✅ | Box IoU≥0.3: 97/99/100% (Scratch/Loc/Edge-Loc, synthetic); `docs/results/v0_val/gradcam_examples.png` |
 | Teammate hand-off (`docs/HANDOFF.md`, split file, data access) | Claude | ✅ | |
 | Model card | Claude | 🟡 | Draft; test numbers pending the final run |
-<<<<<<< HEAD
 | Accuracy improvements (ResNet-18, 60 epochs, bigger ensemble) | Claude | ✅ | None beat `models/v0-ens3` (0.912); recommended v1. See OVERNIGHT.md day 2 |
-=======
-| Accuracy improvements (ResNet-18, 60 epochs, bigger ensemble) | Claude | 🟡 | Running on CPU |
 
 ## Phase 4 — factory simulation (Nasser & Shefali Cat)
 | Item | Owner | Status | Notes |
@@ -46,6 +43,15 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | `wafer/factory/root_causes.json` (9 patterns) | Nasser / Shefali Cat | 🟡 | Causes/machines drafted; Center + Edge-Ring have sources (search excerpts, to confirm); other 6 defect classes: "Triage heuristic; no citation yet" |
 | `build_stream` + `scripts/make_stream.py` | Nasser / Shefali Cat | ✅ | Val wafers, ETCH-04 Edge-Ring excursion from LOT-010; `streams/stream_val_unscored.csv` committed |
 | `check_alert`, `lots_caught_early`, `estimate_impact` | Nasser / Shefali Cat | ✅ | `tests/test_factory.py` |
-| Scored stream with CNN predictions | Nasser / Shefali Cat | ❌ | Needs `data/interim/labeled.pkl`: run `python scripts/make_stream.py` |
+| `check_lot_history` + score_stream | Phase 5 | ✅ | as_of filtering; alerts without lot filter; value at risk |
+| Scored stream with CNN predictions | Nasser / Shefali Cat | 🟡 | Code ready (`make_stream.py` / `python -m wafer.agent --score-stream`); needs `data/interim/labeled.pkl` locally |
 | Rebuild stream from test split | Nasser / Shefali Cat | ❌ | Only after the final test evaluation |
->>>>>>> origin/nsr
+
+## Phase 5 — agent
+| Item | Owner | Status | Notes |
+|---|---|---|---|
+| `wafer/classifiers/` (CNN adapter + YOLO stub) | Phase 5 | ✅ | Default CNN; YOLO raises “not available yet”; no silent fallback |
+| AMD Token Factory client + tool loop | Phase 5 | ✅ | `wafer/agent/`; tools: classify_wafer, lookup_root_cause, check_lot_history, estimate_impact |
+| CLI + callable `WaferAgent` | Phase 5 | ✅ | `python -m wafer.agent`; Streamlit can call `WaferAgent.from_env` |
+| Tests (`test_classifiers`, `test_agent`) | Phase 5 | ✅ | Mocked LLM; no live key required |
+| Docs (HANDOFF §3b, .env.example) | Phase 5 | ✅ | AMD_API_KEY / AMD_BASE_URL / AMD_MODEL |

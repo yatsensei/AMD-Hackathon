@@ -29,10 +29,16 @@ Other entry points: `python -m wafer.train --config <yaml> [--seed N]`, `scripts
 ## For the agent and dashboard (Phases 5–6)
 
 ```python
-from wafer.infer_mock import classify, classify_batch, explain   # today: same keys, heuristic numbers
-from wafer.infer import classify, classify_batch, explain        # once models/v0 exists ($WAFER_MODEL_DIR, else models/v1, else models/v0)
+from wafer.classifiers import get_classifier   # cnn default; yolo not available yet
+from wafer.infer import classify, classify_batch, explain
 from wafer.viz import render_wafer, render_heatmap
+from wafer.agent import WaferAgent              # Token Factory LLM + tools
 ```
+
+Agent setup: set `AMD_API_KEY`, `AMD_BASE_URL`, `AMD_MODEL` in `.env` (see `.env.example`).  
+Run: `python -m wafer.agent --score-stream streams/stream_val_unscored.csv -o streams/stream_val.csv` then  
+`python -m wafer.agent -q "..." --stream streams/stream_val.csv --as-of "2026-10-12 18:00"`.  
+Details: [`docs/HANDOFF.md`](docs/HANDOFF.md) §3b.
 
 ## Phase 1 — build the dataset
 
