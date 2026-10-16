@@ -50,6 +50,20 @@ m = get_wafer_map(df.uid[0])       # the raw map to send through classify()
 - Group them into fictional lots and tools however the story needs. Keep `uid` so every streamed wafer traces back to the dataset.
 - `label` is the true pattern. Use it to inject a "drifting tool" (e.g. pick Edge-Ring wafers for Tool B), but the alert logic must react to the **model's** `classify()` output, not the label.
 
+**Built (Phase 4, `wafer/factory/`):**
+```bash
+python scripts/make_stream.py                 # val stream + CNN predictions -> streams/stream_val.csv, prints alerts + impact
+python scripts/make_stream.py --no-predict    # split file only -> streams/stream_val_unscored.csv (committed)
+```
+```python
+from wafer.factory import build_stream, add_predictions, check_alert, lots_caught_early, lookup_root_cause, estimate_impact
+alerts = check_alert(stream_df, window_hours=24, threshold=3)   # reads `pattern` (model), ignores `none`
+estimate_impact(lots_caught_early(stream_df, alerts[0]))        # $20k/wafer, 25 wafers/lot by default
+lookup_root_cause("Edge-Ring")                                  # from wafer/factory/root_causes.json
+```
+- Scenario: 20 lots of 25, lot every 2 h, wafer every 3 min; lots 1–9 rotate over ETCH-01..04; from LOT-010 every lot runs on ETCH-04 with real Edge-Ring wafers (maps untouched).
+- Healthy lots are 2% defects (`baseline_defect_rate`). At the split's natural ~15%, the 3-in-24h rule fires on healthy tools before the excursion in 50/50 seeds (true labels as predictions); at 2%, in 1/100.
+
 ## 4. YOLO benchmark (Phase 3)
 - PNG folders: `python scripts/prepare_data.py --yolo` writes `yolo_data/{train,val,test}/<class>/<uid>.png`. Defaults to the area-fraction rendering; add `--yolo-encoding nearest` for the plain 0/1/2 colours.
 - To be scored on exactly the same split and metrics as the CNN, write a CSV `uid,prob_Center,prob_Donut,...,prob_none` for **all val and test** wafers, then:
