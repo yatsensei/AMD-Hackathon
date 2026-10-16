@@ -99,6 +99,18 @@ def test_alert_respects_window_tool_pattern_and_none():
     assert check_alert(mixed_tools.assign(tool_id="T1"), threshold=4) == []
 
 
+def test_one_alert_per_tool_lists_later_patterns():
+    df = events([("ETCH-04", "Edge-Ring", h, "L1") for h in (0, 1, 2)]
+                + [("ETCH-04", "Edge-Loc", h, "L2") for h in (5, 6, 7)]
+                + [("ETCH-01", "Loc", h, "L3") for h in (8, 9, 10)])
+    first, other = check_alert(df)
+    assert (first["tool_id"], first["pattern"]) == ("ETCH-04", "Edge-Ring")
+    assert first["also_seen"] == [{"pattern": "Edge-Loc", "fired_at": "2026-10-12T07:00:00",
+                                   "fired_lot_id": "L2", "count_in_window": 3}]
+    assert (other["tool_id"], other["also_seen"]) == ("ETCH-01", [])
+    assert len(check_alert(df, one_per_tool=False)) == 3
+
+
 def test_alert_reads_prediction_not_label():
     df = events([("T1", "none", h, "L") for h in range(3)]).assign(label="Edge-Ring")
     assert check_alert(df) == []
