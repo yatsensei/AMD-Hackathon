@@ -63,8 +63,9 @@ All of this is in the spec's Decisions Log.
 - **Small-wafer weakness:** the smallest quartile is the biggest gap. Worth one experiment (e.g. aux die-count feature E8, or 96 px).
 
 ## 5. For the agent and dashboard teammates
-`models/v0` is in the repo (9 MB) and works today:
+`models/v0` is in the repo and works today. **Phase 5 agent is implemented** — see `docs/HANDOFF.md` §3b (`python -m wafer.agent`).
 ```python
+from wafer.classifiers import get_classifier   # preferred for agent/dashboard
 from wafer.infer import classify, explain        # picks models/v1 if present, else models/v0
 classify(wafer_map)   # {"pattern", "confidence", "probs", "top2", "defect_prob", "needs_review", "review_reasons", "model_version"}
 ```

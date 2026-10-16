@@ -10,13 +10,18 @@ There are two ways in, depending on what the AMD access gives you:
 
 ---
 
-## What Token Factory gives us (checked 14 Oct)
-- **Only an LLM API:** one shared team key (`rc-...`) and a list of free models (DeepSeek, Qwen, GLM, Gemma…) at `https://developer.amd.com.cn/radeon/api/v1`. That's for the **agent** teammates, and it counts as the AMD part of the live product (the models run on AMD GPUs). Keep the key in an env var (`RADEON_API_KEY`, see `.env.example`); never commit it or paste it anywhere visible. All 5 of us share one key: 30 requests/min and 8 concurrent, team-wide.
-- **No GPU instances in the UI.** The API docs mention instance endpoints, but nothing in our dashboard offers them, so we treat them as unavailable.
-- **So the CNN needs a GPU from somewhere else.** Options, in order:
-  1. **AMD Developer Cloud** (a GPU VM: Instinct MI300X, SSH and/or Jupyter). The event page mentions a $100 credit. Ask in the lablab Discord / check the AMD AI Developer Program portal for how to claim it. A few hours of GPU is plenty for us. Then follow path **A** (Jupyter) or **B** (SSH) below.
-  2. **Any AMD GPU a teammate has** (Radeon RX 7000 series / Radeon PRO on Linux with ROCm): path **B** without Docker.
-  3. **No AMD GPU: train on CPU.** The CNN is small: about 2 s per 256-wafer step on 4 CPU cores (measured), so about 2–3 h per 30-epoch run. Claude can run this in its own cloud environment (path **C**) or anyone can run it on a laptop. The AMD requirement is then met by the agent's LLM on Token Factory, and the pitch must **not** say the CNN was trained on AMD.
+## What Token Factory gives us (checked 14 Oct; agent live Phase 5)
+- **Only an LLM API:** one shared team key (`rc-...`) and a rotating catalog of free models at `https://developer.amd.com.cn/radeon/api/v1`. That is the **live AMD component** of the product (models run on AMD GPUs). The Phase 5 agent uses it via the OpenAI-compatible SDK.
+- **Env vars** (see `.env.example`; never commit real values):
+  - `AMD_API_KEY` — team key (optional legacy alias: `RADEON_API_KEY`)
+  - `AMD_BASE_URL` — `https://developer.amd.com.cn/radeon/api/v1`
+  - `AMD_MODEL` — pick an id from `GET $AMD_BASE_URL/models` (catalog changes; do not hard-code)
+- Shared team limits: ~30 RPM, 8 concurrent, daily spend cap. Honour `Retry-After` on 429.
+- **Run the agent:** [`docs/HANDOFF.md`](HANDOFF.md) §3b / `python -m wafer.agent --help`.
+- **No GPU instances in our UI** for CNN training. Options if you want AMD training later:
+  1. **AMD Developer Cloud** (Instinct MI300X / ROCm) — paths **A** / **B** below.
+  2. **Teammate AMD GPU** with ROCm — path **B** without Docker.
+  3. **CPU training** (what we shipped for `models/v0*`) — pitch must **not** say the CNN was trained on AMD; Token Factory covers the AMD claim for the agent.
 
 ## 0. Before you start (once, ~10 min)
 1. **Kaggle API token.** kaggle.com → *Settings* → *API Tokens* → create one (the new kind; the legacy `kaggle.json` isn't needed). The scripts read it from the `KAGGLE_API_TOKEN` environment variable. Keep it private: never paste it into chat, a notebook output, or git.

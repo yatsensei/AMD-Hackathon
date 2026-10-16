@@ -20,12 +20,25 @@ def main(argv=None) -> int:
         description="Wafer defect pattern assistant (AMD Token Factory + CNN tools)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "Requires AMD_API_KEY, AMD_BASE_URL, AMD_MODEL in the environment or .env.\n"
-            "List models: GET $AMD_BASE_URL/models. Default classifier is cnn "
-            "($WAFER_CLASSIFIER). Selecting yolo fails clearly until its adapter exists.\n"
-            "Score an unscored stream first if you need prediction-based alerts:\n"
+            "Requires AMD_API_KEY, AMD_BASE_URL, AMD_MODEL in the environment or .env "
+            "(see .env.example). Never commit secrets.\n"
+            "List models: GET $AMD_BASE_URL/models — set AMD_MODEL to a listed id.\n"
+            "Classifier: cnn by default ($WAFER_CLASSIFIER). yolo is not available yet "
+            "(clear error; no CNN fallback).\n"
+            "Stdout is the answer. Errors and evidence warnings go to stderr. "
+            "Use --debug for timings and the model/classifier/as_of footer.\n"
+            "\n"
+            "Works today: CNN classify + factory tools + Token Factory tool loop.\n"
+            "Pending: YOLO adapter, Streamlit dashboard, final test-set eval.\n"
+            "\n"
+            "Score an unscored stream first if you need prediction-based alerts "
+            "(needs data/interim/labeled.pkl + a CNN export):\n"
             "  python -m wafer.agent --score-stream streams/stream_val_unscored.csv "
-            "-o streams/stream_val.csv"
+            "-o streams/stream_val.csv\n"
+            "\n"
+            "Example:\n"
+            "  python -m wafer.agent -q \"What is happening on ETCH-04?\" \\\n"
+            "    --stream streams/stream_val.csv --as-of \"2026-10-13 04:10\""
         ),
     )
     p.add_argument("--question", "-q", help="User question for the agent")
