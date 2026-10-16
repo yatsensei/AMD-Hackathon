@@ -40,7 +40,7 @@ FINAL_DIR = REPO_ROOT / "docs" / "results" / "final"
 class Scored:
     """A model's calibrated outputs on one split."""
 
-    def __init__(self, model_dir: Path, data_dir: Path, split: str, device: str):
+    def __init__(self, model_dir: Path, data_dir: Path, split: str, device: str, cache: Path | None = None):
         self.dir = model_dir
         self.cfg = yaml.safe_load((model_dir / "config.yaml").read_text())
         self.cal = json.loads((model_dir / "calibration.json").read_text())
@@ -49,8 +49,14 @@ class Scored:
         self.idx = self.data.indices(split)
         self.members = load_members(model_dir, self.cfg, device)
         self.tta = bool(self.cfg.get("tta", False))
-        z = calibrate.combine_members([predict_rows(m, self.data, self.idx, tta=self.tta) for m in self.members],
-                                      self.tta)
+        if cache is not None and cache.exists() and np.array_equal(np.load(cache)["idx"], self.idx):
+            z = np.load(cache)["z"]
+        else:
+            z = calibrate.combine_members([predict_rows(m, self.data, self.idx, tta=self.tta) for m in self.members],
+                                          self.tta)
+            if cache is not None:
+                np.savez(cache, z=z, idx=self.idx)
+        self.z = z
         self.P = calibrate.apply(self.cal, z)
         self.d = calibrate.decide(self.cal, self.P)
         self.y = self.data.y_np[self.idx]
