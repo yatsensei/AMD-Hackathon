@@ -45,7 +45,7 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Ph
 ## Phase 4 — factory simulation (Nasser & Shefali Cat)
 | Item | Owner | Status | Notes |
 |---|---|---|---|
-| `wafer/factory/root_causes.json` (9 patterns) | Nasser / Shefali Cat | 🟡 | Center + Edge-Ring have sources (not read in full); others triage heuristic |
+| `wafer/factory/root_causes.json` (9 patterns) | Nasser / Shefali Cat | 🟡 | 7 of 8 defect patterns cited (arXiv 2607.00961 Table 1, US patents, Minitab), all from search excerpts: open each link to confirm, then drop "Not read in full". Near-full: no source found |
 | `build_stream` + `scripts/make_stream.py` | Nasser / Shefali Cat | ✅ | Val ETCH-04 Edge-Ring from LOT-010; `stream_val_unscored.csv` committed |
 | `check_alert`, `lots_caught_early`, `estimate_impact` | Nasser / Shefali Cat | ✅ | Observed vs assumed-full-lot exposure; no false savings claims; one alert per tool, later patterns in `also_seen` |
 | `check_lot_history` + `score_stream` | Phase 5 | ✅ | Compact LLM payload; full events local; as_of-safe alerts |

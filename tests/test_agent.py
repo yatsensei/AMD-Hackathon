@@ -168,8 +168,8 @@ def test_root_cause_preserves_source_warnings():
     assert ring["is_possibility"] is True
     assert "source" in ring and ring["source"]
     assert "source_not_read_in_full" in ring["source_warnings"]
-    donut = lookup_root_cause("Donut")
-    assert "unverified_no_citation" in donut["source_warnings"]
+    near_full = lookup_root_cause("Near-full")
+    assert "unverified_no_citation" in near_full["source_warnings"]
 
 
 # --------------------------------------------------------------------------- tools / classify
