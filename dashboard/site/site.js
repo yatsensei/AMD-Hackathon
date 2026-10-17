@@ -190,7 +190,7 @@
     const next = new URLSearchParams(location.search).get("next");
     const go = (name, role) => {
       try { sessionStorage.setItem("yc-user", JSON.stringify({ name, role })); } catch (_) { /* private mode: fine */ }
-      location.href = next === "model" ? "/app/#model" : "/app/";
+      location.href = "/app/";
     };
     const nameFromEmail = (email) => {
       const local = (email || "").split("@")[0].replace(/[._-]+/g, " ").trim();

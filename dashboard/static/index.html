@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sentry</title>
+  <title>Sentry · Line</title>
   <link rel="icon" href="/site/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,62 +11,77 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/" title="Sentry home">
-      <div class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 32 32" width="26" height="26"><path d="M17.8 28.88A13 13 0 1 0 14.2 28.88L16 26.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><g fill="currentColor" opacity=".38"><rect x="9.5" y="9.5" width="4" height="4" rx=".6"/><rect x="14" y="9.5" width="4" height="4" rx=".6"/><rect x="18.5" y="9.5" width="4" height="4" rx=".6"/><rect x="9.5" y="14" width="4" height="4" rx=".6"/><rect x="14" y="14" width="4" height="4" rx=".6"/><rect x="9.5" y="18.5" width="4" height="4" rx=".6"/><rect x="14" y="18.5" width="4" height="4" rx=".6"/></g><rect x="18.5" y="14" width="4" height="4" rx=".6" fill="#e2232d"/></svg>
-      </div>
-      <div>
-        <div class="brand-name">Sentry</div>
-        <div class="brand-sub">Etch bay · simulated line</div>
-      </div>
+<div class="app">
+  <!-- ============================================================ SIDEBAR -->
+  <aside class="side" aria-label="Main navigation">
+    <a class="side-brand" href="/" title="Sentry home">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M17.8 28.88A13 13 0 1 0 14.2 28.88L16 26.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><g fill="currentColor" opacity=".38"><rect x="9.5" y="9.5" width="4" height="4" rx=".6"/><rect x="14" y="9.5" width="4" height="4" rx=".6"/><rect x="18.5" y="9.5" width="4" height="4" rx=".6"/><rect x="9.5" y="14" width="4" height="4" rx=".6"/><rect x="14" y="14" width="4" height="4" rx=".6"/><rect x="9.5" y="18.5" width="4" height="4" rx=".6"/><rect x="14" y="18.5" width="4" height="4" rx=".6"/><rect x="18.5" y="18.5" width="4" height="4" rx=".6"/></g><rect x="18.5" y="14" width="4" height="4" rx=".6" fill="#e2232d"/></svg>
+      <span class="side-label">Sentry</span>
     </a>
 
-    <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="ops" role="tab">Operations</button>
-      <button class="tab" data-tab="agent" role="tab">Copilot</button>
-      <button class="tab" data-tab="model" role="tab">Model quality</button>
+    <nav class="side-nav">
+      <p class="side-group side-label">Etch bay</p>
+      <a class="nav-item" href="#overview" data-page="overview" title="Overview"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span class="side-label">Overview</span></a>
+      <a class="nav-item" href="#alerts" data-page="alerts" title="Alerts"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 16.5v.5"/><path d="M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="side-label">Alerts</span><span class="count red" id="nav-alerts" hidden></span></a>
+      <a class="nav-item" href="#tools" data-page="tools" title="Tools"><svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg><span class="side-label">Tools</span></a>
+      <a class="nav-item" href="#lots" data-page="lots" title="Lots"><svg viewBox="0 0 24 24"><path d="M12 3 3 7.5l9 4.5 9-4.5z"/><path d="m3 12 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/></svg><span class="side-label">Lots</span></a>
+      <a class="nav-item" href="#review" data-page="review" title="Review queue"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8.5 11l2 2 3.5-4"/></svg><span class="side-label">Review queue</span><span class="count" id="nav-review" hidden></span></a>
+      <a class="nav-item" href="#decisions" data-page="decisions" title="Decisions"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg><span class="side-label">Decisions</span></a>
     </nav>
 
-    <div class="clock-group">
-      <div class="clock">
-        <span class="clock-label">Line time</span>
-        <span id="clock" class="mono">--</span>
+    <div class="side-foot">
+      <div class="system side-label" aria-label="System status">
+        <p class="side-group">System</p>
+        <div class="sys" id="pill-model"></div>
+        <div class="sys" id="pill-yolo"></div>
+        <div class="sys" id="pill-agent"></div>
       </div>
-      <div class="playback" aria-label="Replay controls">
-        <button id="btn-restart" class="icon-btn" title="Restart replay"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5"/></svg></button>
-        <button id="btn-play" class="icon-btn primary" title="Play / pause"><svg id="ico-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" class="fill"/></svg></button>
-        <button id="btn-lot" class="icon-btn" title="Advance one lot"><svg viewBox="0 0 24 24"><path d="M5 5v14l9-7zM16 5v14"/></svg></button>
-        <select id="speed" title="Replay speed">
-          <option value="1">1×</option><option value="5" selected>5×</option><option value="25">25×</option>
-        </select>
-      </div>
-      <a class="user-chip" id="user-chip" href="/" hidden>
-        <span class="avatar" id="user-initials" aria-hidden="true"></span>
-        <span class="user-meta"><b id="user-name"></b><small>Sign out</small></span>
+      <a class="user" id="user-chip" href="/" title="Sign out">
+        <span class="avatar" id="user-initials">EN</span>
+        <span class="side-label user-meta"><b id="user-name">Engineer</b><small>Sign out</small></span>
       </a>
     </div>
-  </header>
+  </aside>
 
-  <div class="statusbar">
-    <span class="pill" id="pill-model"><span class="dot dot-good"></span>Classifier</span>
-    <span class="pill" id="pill-yolo"><span class="dot"></span>Second opinion</span>
-    <span class="pill" id="pill-agent"><span class="dot"></span>Copilot (AMD Token Factory)</span>
-    <span class="statusbar-note" id="stream-note"></span>
-  </div>
+  <!-- ============================================================ MAIN -->
+  <div class="main">
+    <header class="top">
+      <div class="top-title">
+        <h1 id="page-title">Overview</h1>
+        <p id="page-sub" class="muted">Live view of the etch bay</p>
+      </div>
+      <div class="replay" aria-label="Line replay">
+        <div class="clock"><span class="clock-label">Line time</span><span id="clock" class="mono">--</span></div>
+        <div class="replay-ctl">
+          <button id="btn-restart" class="icon-btn" title="Restart replay" aria-label="Restart replay"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5"/></svg></button>
+          <button id="btn-play" class="icon-btn play" title="Play or pause" aria-label="Play or pause"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" class="fill"/></svg></button>
+          <button id="btn-lot" class="icon-btn" title="Advance one lot" aria-label="Advance one lot"><svg viewBox="0 0 24 24"><path d="M5 5v14l9-7zM16 5v14"/></svg></button>
+          <select id="speed" title="Replay speed" aria-label="Replay speed"><option value="1">1×</option><option value="5" selected>5×</option><option value="25">25×</option></select>
+        </div>
+      </div>
+      <div class="replay-bar" aria-hidden="true"><span id="replay-progress"></span></div>
+    </header>
 
-  <main>
-    <!-- OPERATIONS -->
-    <section class="view active" id="view-ops">
-      <div class="kpis" id="kpis"></div>
-      <div class="grid">
-        <div class="col-main">
-          <div class="card">
-            <div class="card-head"><h2>Tools</h2><span class="muted">Defective wafers per lot · alert rule: ≥3 of one pattern on one tool within 24 h</span></div>
-            <div class="tools" id="tools"></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h2>Inspection feed</h2><span class="muted">Every wafer classified as it leaves the tool · newest first</span></div>
+    <main class="content" id="content">
+      <!-- OVERVIEW ------------------------------------------------ -->
+      <section class="page" id="view-ops" data-page="overview">
+        <div class="kpis" id="kpis"></div>
+        <div class="card">
+          <div class="card-head"><h2>Tools</h2><span class="muted">Defective wafers per lot · alert when one tool repeats a pattern 3 times in 24 h</span></div>
+          <div class="tools" id="tools"></div>
+        </div>
+        <div class="split">
+          <div class="card feed-card">
+            <div class="card-head"><h2>Inspection feed</h2><span class="muted" id="feed-count"></span></div>
+            <div class="filters" role="search">
+              <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="f-q" type="search" placeholder="Search lot or wafer" autocomplete="off" aria-label="Search lot or wafer"></label>
+              <select id="f-tool" aria-label="Tool"></select>
+              <select id="f-pattern" aria-label="Pattern"></select>
+              <div class="seg" id="f-status" role="group" aria-label="Status">
+                <button type="button" data-v="all" class="on">All</button><button type="button" data-v="defect">Defects</button><button type="button" data-v="review">Review</button>
+              </div>
+              <button type="button" class="link-btn" id="f-clear" hidden>Clear filters</button>
+            </div>
             <div class="table-wrap">
               <table class="feed">
                 <thead><tr><th>Time</th><th>Lot</th><th>Tool</th><th>Wafer</th><th>Pattern</th><th>Confidence</th><th>Status</th></tr></thead>
@@ -74,74 +89,115 @@
               </table>
             </div>
           </div>
-        </div>
-        <aside class="col-side">
-          <div class="card">
-            <div class="card-head"><h2>Alerts</h2><span class="muted" id="alert-count"></span></div>
-            <div id="alerts"></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h2>Decision log</h2><span class="muted">Engineer actions</span></div>
-            <ul class="log" id="decisions"></ul>
-          </div>
-        </aside>
-      </div>
-    </section>
-
-    <!-- COPILOT -->
-    <section class="view" id="view-agent">
-      <div class="agent-layout">
-        <div class="card chat-card">
-          <div class="card-head"><h2>Copilot</h2><span class="muted">Answers from the live line data through tools: classifier, alert rule, lot history, root causes, impact</span></div>
-          <div class="chat" id="chat">
-            <div class="chat-empty" id="chat-empty">
-              <p>Ask about the line. The copilot only sees wafers up to the current line time.</p>
-              <div class="suggestions">
-                <button class="chip-btn" data-q="What is going on with ETCH-04?">What is going on with ETCH-04?</button>
-                <button class="chip-btn" data-q="Which lots should we hold, and what is at risk?">Which lots should we hold, and what is at risk?</button>
-                <button class="chip-btn" data-q="Summarise the line in the last 24 hours.">Summarise the line in the last 24 hours</button>
-              </div>
+          <div class="stack">
+            <div class="card">
+              <div class="card-head"><h2>Active alerts</h2><a class="link" href="#alerts">All alerts</a></div>
+              <div id="alerts-mini"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>Latest decisions</h2><a class="link" href="#decisions">Audit log</a></div>
+              <ul class="log" id="decisions-mini"></ul>
             </div>
           </div>
-          <form class="ask" id="ask-form">
-            <input id="ask-input" placeholder="Ask the copilot…" autocomplete="off">
-            <button class="btn primary" type="submit">Ask</button>
-          </form>
         </div>
-        <div class="card agent-side">
-          <div class="card-head"><h2>How it answers</h2></div>
-          <ol class="steps">
-            <li id="steps-classifier"><b>Line model</b> names each wafer's defect pattern; confidence and review rules depend on whether the stream was scored by CNN or experimental YOLO.</li>
-            <li><b>Alert rule</b> fires when one tool produces the same pattern repeatedly (line-model predictions only).</li>
-            <li><b>Copilot</b> (LLM on AMD Token Factory) explains the likely cause, lots at risk and cost, citing its sources — answers are tied to the line time when you asked.</li>
-            <li><b>Engineer</b> decides: hold lots, open a ticket or dismiss.</li>
-          </ol>
-          <p class="fine">Root causes are triage possibilities from published sources, not diagnoses. Cost uses an adjustable wafer value.</p>
+      </section>
+
+      <!-- ALERTS -------------------------------------------------- -->
+      <section class="page" data-page="alerts" hidden>
+        <div id="alerts"></div>
+      </section>
+
+      <!-- TOOLS --------------------------------------------------- -->
+      <section class="page" data-page="tools" hidden>
+        <div class="tool-pages" id="tool-pages"></div>
+      </section>
+
+      <!-- LOTS ---------------------------------------------------- -->
+      <section class="page" data-page="lots" hidden>
+        <div class="card">
+          <div class="card-head"><h2>Lots</h2><span class="muted" id="lots-note"></span></div>
+          <div class="table-wrap">
+            <table class="grid-table lots" id="lots">
+              <thead><tr><th>Lot</th><th>Tool</th><th>Started</th><th class="num">Wafers</th><th>Defect rate</th><th>Top pattern</th><th>Status</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- MODEL QUALITY -->
-    <section class="view" id="view-model">
-      <div class="kpis" id="model-kpis"></div>
-      <div class="card">
-        <div class="card-head"><h2>Per-class results</h2><span class="muted" id="model-note"></span></div>
-        <div class="table-wrap"><table class="perclass" id="perclass"></table></div>
-      </div>
-      <div class="charts" id="charts"></div>
-    </section>
-  </main>
+      <!-- REVIEW -------------------------------------------------- -->
+      <section class="page" data-page="review" hidden>
+        <div class="card">
+          <div class="card-head"><h2>Waiting for review</h2><span class="muted">The model was unsure, so these wafers come to a person instead of being accepted automatically</span></div>
+          <div class="review-grid" id="review"></div>
+        </div>
+        <div class="card" id="reviewed-card" hidden>
+          <div class="card-head"><h2>Reviewed this session</h2><span class="muted">Kept in this browser tab only</span></div>
+          <ul class="log" id="reviewed"></ul>
+        </div>
+      </section>
 
-  <!-- Wafer inspector -->
-  <div class="scrim" id="scrim" hidden></div>
-  <aside class="drawer" id="drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div><div class="eyebrow">Wafer inspector</div><h3 id="dr-title">—</h3></div>
-      <button class="icon-btn" id="dr-close" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <!-- DECISIONS ----------------------------------------------- -->
+      <section class="page" data-page="decisions" hidden>
+        <div class="card">
+          <div class="card-head"><h2>Audit log</h2><span class="muted">Every action on an alert, who made it and at what line time</span></div>
+          <div class="table-wrap">
+            <table class="grid-table" id="decisions">
+              <thead><tr><th>Line time</th><th>Action</th><th>Tool</th><th>Pattern</th><th>By</th><th>Recorded (UTC)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <p class="foot-note" id="stream-note"></p>
+    </main>
+  </div>
+</div>
+
+<!-- ============================================================ COPILOT -->
+<button class="copilot-fab" id="copilot-fab" type="button" aria-expanded="false" aria-controls="copilot">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>
+  <span>Ask Sentry</span>
+</button>
+<section class="copilot" id="copilot" aria-label="Copilot" hidden>
+  <header class="cp-head">
+    <span class="cp-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg></span>
+    <div><b>Copilot</b><small id="cp-sub">AMD Token Factory</small></div>
+    <button class="icon-btn ghost" id="cp-close" type="button" aria-label="Close copilot"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </header>
+  <div class="chat" id="chat">
+    <div class="chat-empty" id="chat-empty">
+      <p>Ask about the line. The copilot sees wafers up to the current line time only, and answers from the line's own data.</p>
+      <div class="suggestions">
+        <button class="chip-btn" type="button" data-q="What is going on with ETCH-04?">What is going on with ETCH-04?</button>
+        <button class="chip-btn" type="button" data-q="Which lots should we hold, and what is at risk?">Which lots should we hold, and what is at risk?</button>
+        <button class="chip-btn" type="button" data-q="Summarise the line in the last 24 hours.">Summarise the last 24 hours</button>
+      </div>
+      <ol class="steps">
+        <li id="steps-classifier"><b>Line model</b> names each wafer's defect pattern.</li>
+        <li><b>Alert rule</b> fires when one tool repeats a pattern.</li>
+        <li><b>Copilot</b> explains the likely cause, lots at risk and cost, citing sources.</li>
+        <li><b>You decide:</b> hold lots, open a ticket or dismiss.</li>
+      </ol>
     </div>
-    <div class="drawer-body" id="dr-body"></div>
-  </aside>
+  </div>
+  <form class="ask" id="ask-form">
+    <input id="ask-input" placeholder="Ask about a tool, lot or wafer" autocomplete="off" aria-label="Question for the copilot">
+    <button class="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </form>
+</section>
 
-  <script src="app.js"></script>
+<!-- ============================================================ DRAWER -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div><div class="eyebrow" id="dr-eyebrow">Wafer inspector</div><h3 id="dr-title">—</h3></div>
+    <button class="icon-btn ghost" id="dr-close" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div class="drawer-body" id="dr-body"></div>
+</aside>
+
+<script src="app.js"></script>
 </body>
 </html>

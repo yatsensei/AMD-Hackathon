@@ -11,7 +11,7 @@ uvicorn dashboard.server:app --port 8000        # from the repo root
 
 Works without the 2 GB dataset: the 500 stream maps ship in `dashboard/data/stream_maps.npz`
 (also used by `classify_wafer` via `wafer.data.access.get_wafer_map`).
-The copilot tab needs `AMD_API_KEY`, `AMD_BASE_URL` and `AMD_MODEL` (see `.env.example`);
+The copilot needs `AMD_API_KEY`, `AMD_BASE_URL` and `AMD_MODEL` (see `.env.example`);
 everything else runs offline.
 
 **Hugging Face Docker Space:** see [`docs/DEPLOY_SPACE.md`](../docs/DEPLOY_SPACE.md)
@@ -23,7 +23,7 @@ everything else runs offline.
 |---|---|---|
 | `/` | Product homepage | `dashboard/site/index.html`, `site.css`, `site.js` |
 | `/signin` | Demo sign-in. No accounts: it only keeps a display name in the browser tab, then opens `/app/` | `dashboard/site/signin.html` |
-| `/app/` | The dashboard (`#model` opens the Model quality tab) | `dashboard/static/` |
+| `/app/` | The app: `#overview`, `#alerts`, `#tools`, `#lots`, `#review`, `#decisions` | `dashboard/static/` |
 
 The homepage's wafer images are real validation wafers, rendered by
 `python scripts/export_site_images.py`; `site/img/app-operations.png` is a screenshot of `/app/?t=330`.
@@ -31,12 +31,21 @@ The per-class chart on the homepage reads `/api/model`, so it always matches the
 
 ## Views
 
-| View | What it shows | Source |
+The app has a left sidebar (icon rail on narrow screens, bottom bar on phones) and these pages:
+
+| Page | What it shows | Source |
 |---|---|---|
-| Operations | KPIs, per-tool defect bars, inspection feed, alerts with likely cause, exposure and engineer actions (hold, ticket, dismiss). Status bar shows **line model** (drives feed/alerts) vs optional **second opinion**. | `wafer.factory` (alert rule, root causes, impact) |
+| Overview | KPIs, per-tool defect bars, inspection feed with filters (search, tool, pattern, defects / review), active alerts, latest decisions | `/api/state`, `/api/wafers` |
+| Alerts | Each excursion with likely cause and source, exposure, the evidence wafers, and hold / ticket / dismiss / ask copilot | `wafer.factory` (alert rule, root causes, impact) |
+| Tools | Per tool: wafers, defect rate, review count, defective wafers per lot (one 0–25 scale for all tools), defect pattern mix | `/api/state`, `/api/wafers` |
+| Lots | Every lot with defect rate, top pattern and status (normal, in alert, at risk after an alert, held); click a lot for its wafers | `/api/wafers`, alerts and decisions |
+| Review queue | Wafers the model sent to a person; confirm or reject (kept in the browser tab only) | `needs_review` on the stream |
+| Decisions | Audit log of alert actions with who made them (the demo sign-in name) and the line time | `/api/decisions` (in memory) |
 | Wafer inspector | Map; line prediction from the scored stream; optional live CNN / YOLO opinions (not the alert source). Attention heatmap is CNN-only. | `wafer.infer`, `wafer.explain`, `wafer.classifiers` |
-| Copilot | Questions answered from line data up to the submitted `as_of` (shown on each answer) | `wafer.agent.WaferAgent` (AMD Token Factory) |
-| Model quality | Validation metrics, per-class table, every report chart (CNN metrics) | `docs/results/<model>_val/metrics.json`, `docs/results/report/` |
+| Copilot (chat bubble on every page) | Questions answered from line data up to the submitted `as_of` (shown on each answer) | `wafer.agent.WaferAgent` (AMD Token Factory) |
+
+Model metrics and charts are no longer a page in the app: see `docs/results/MODEL_CARD.md` and
+`docs/results/report/`. `/api/model` still serves the homepage's per-class chart.
 
 Experimental YOLO-cls (`models/yolo-cls-exp`): uncalibrated; no validated automatic-acceptance /
 review policy; private training split overlaps the val demo — not a fair CNN comparison.

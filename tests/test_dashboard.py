@@ -152,3 +152,31 @@ def test_site_assets_exist():
     html = client.get("/").text + client.get("/signin").text
     for src in set(re.findall(r'(?:src|href)="(/site/[^"]+)"', html)):
         assert client.get(src).status_code == 200, src
+
+
+def test_wafers_endpoint_lists_everything_seen(meta):
+    as_of = meta["timestamps"][100]
+    ws = client.get("/api/wafers", params={"as_of": as_of}).json()["wafers"]
+    assert len(ws) == 101                                    # one wafer per timestamp in the demo stream
+    assert ws[0]["timestamp"] >= ws[-1]["timestamp"]         # newest first
+    assert all(w["timestamp"] <= as_of for w in ws)          # nothing from the future
+
+
+def test_decision_records_signed_in_name(meta):
+    as_of = meta["timestamps"][-1]
+    a = client.get("/api/state", params={"as_of": as_of}).json()["alerts"][0]
+    rec = client.post("/api/decisions", json={"tool_id": a["tool_id"], "fired_at": a["fired_at"], "pattern": a["pattern"],
+                                              "action": "ticket", "as_of": as_of, "by": "Jane Doe"}).json()
+    assert rec["by"] == "Jane Doe"
+    rec = client.post("/api/decisions", json={"tool_id": a["tool_id"], "fired_at": a["fired_at"], "pattern": a["pattern"],
+                                              "action": "ticket", "as_of": as_of}).json()
+    assert rec["by"] == "Engineer (demo)"
+    server._decisions.clear()
+
+
+def test_app_shell_pages_and_copilot_bubble():
+    html = (STATIC / "index.html").read_text()
+    for page in ("overview", "alerts", "tools", "lots", "review", "decisions"):
+        assert f'data-page="{page}"' in html
+    assert 'id="copilot-fab"' in html and 'id="f-status"' in html
+    assert "Model quality" not in html
