@@ -228,6 +228,13 @@ def state(as_of: str):
     }
 
 
+@app.get("/api/wafers")
+def wafers(as_of: str):
+    """Every wafer on the line up to as_of, newest first (feed filters, lots, review queue)."""
+    seen = stream_as_of(stream(), as_of)
+    return {"as_of": as_of, "wafers": [_wafer_row(r) for r in seen.iloc[::-1].itertuples()]}
+
+
 @app.get("/api/wafer/{uid}")
 def wafer(uid: int):
     m = wafer_map(uid)
@@ -291,13 +298,15 @@ class Decision(BaseModel):
     action: str                     # hold | ticket | dismiss
     note: str = ""
     as_of: str
+    by: str = ""                    # display name from the demo sign-in (no accounts)
 
 
 @app.post("/api/decisions")
 def decide(d: Decision):
     if d.action not in ("hold", "ticket", "dismiss"):
         raise HTTPException(400, "action must be hold, ticket or dismiss")
-    rec = {**d.model_dump(), "decided_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "by": "Engineer (demo)"}
+    by = d.by.strip()[:60] or "Engineer (demo)"
+    rec = {**d.model_dump(), "decided_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "by": by}
     with _lock:
         _decisions.append(rec)
     return rec
