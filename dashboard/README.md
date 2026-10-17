@@ -6,7 +6,7 @@ validation stream as a live etch line, so every screen shows real WM-811K wafers
 ```bash
 pip install -r requirements.txt -r dashboard/requirements.txt
 uvicorn dashboard.server:app --port 8000        # from the repo root
-# open http://localhost:8000   (add ?t=400 to start after the ETCH-04 excursion)
+# open http://localhost:8000   (homepage; Sign in leads to the dashboard at /app/, add ?t=400 to start after the excursion)
 ```
 
 Works without the 2 GB dataset: the 500 stream maps ship in `dashboard/data/stream_maps.npz`
@@ -16,6 +16,18 @@ everything else runs offline.
 
 **Hugging Face Docker Space:** see [`docs/DEPLOY_SPACE.md`](../docs/DEPLOY_SPACE.md)
 (`uvicorn` on `0.0.0.0:7860`).
+
+## Pages
+
+| URL | Page | Files |
+|---|---|---|
+| `/` | Product homepage | `dashboard/site/index.html`, `site.css`, `site.js` |
+| `/signin` | Demo sign-in. No accounts: it only keeps a display name in the browser tab, then opens `/app/` | `dashboard/site/signin.html` |
+| `/app/` | The dashboard (`#model` opens the Model quality tab) | `dashboard/static/` |
+
+The homepage's wafer images are real validation wafers, rendered by
+`python scripts/export_site_images.py`; `site/img/app-operations.png` is a screenshot of `/app/?t=330`.
+The per-class chart on the homepage reads `/api/model`, so it always matches the deployed model.
 
 ## Views
 

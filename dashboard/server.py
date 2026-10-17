@@ -25,8 +25,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -343,4 +343,28 @@ def report_chart(name: str):
     return FileResponse(p, media_type="image/png")
 
 
-app.mount("/", StaticFiles(directory=HERE / "static", html=True), name="static")
+# ----------------------------------------------------------------------------- pages
+# /         product homepage (dashboard/site)
+# /signin   demo sign-in: no accounts, it only remembers a display name in the browser
+# /app/     the dashboard itself (dashboard/static)
+SITE = HERE / "site"
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(SITE / "index.html")
+
+
+@app.get("/signin", include_in_schema=False)
+def signin():
+    return FileResponse(SITE / "signin.html")
+
+
+@app.get("/app", include_in_schema=False)
+def app_root(request: Request):
+    q = request.url.query
+    return RedirectResponse("/app/" + (f"?{q}" if q else ""))
+
+
+app.mount("/site", StaticFiles(directory=SITE), name="site")
+app.mount("/app", StaticFiles(directory=HERE / "static", html=True), name="app")

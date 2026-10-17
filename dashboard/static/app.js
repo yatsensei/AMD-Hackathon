@@ -424,6 +424,20 @@ function switchTab(name) {
   if (name === "model" && !modelLoaded) { modelLoaded = true; loadModel(); }
 }
 
-init().catch((e) => {
+/* Demo sign-in (/signin) only remembers a display name in this browser tab. */
+function showUser() {
+  let u = null;
+  try { u = JSON.parse(sessionStorage.getItem("yc-user") || "null"); } catch (_) { /* storage blocked */ }
+  if (!u?.name) return;
+  const chip = document.querySelector("#user-chip");
+  document.querySelector("#user-name").textContent = u.name;
+  document.querySelector("#user-initials").textContent = u.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  chip.title = `Signed in as ${u.name}${u.role ? ` (${u.role})` : ""}. Sign out`;
+  chip.hidden = false;
+  chip.addEventListener("click", () => { try { sessionStorage.removeItem("yc-user"); } catch (_) { /* ignore */ } });
+}
+showUser();
+
+init().then(() => { if (location.hash === "#model") switchTab("model"); }).catch((e) => {
   document.querySelector("main").innerHTML = `<div class="card empty">Could not load the dashboard: ${esc(e.message)}</div>`;
 });

@@ -67,7 +67,7 @@ docker run --rm -p 7860:7860 \
   yield-copilot-space
 ```
 
-Then open http://localhost:7860 (try `?t=400` to land after the ETCH-04 excursion).
+Then open http://localhost:7860 for the homepage, or http://localhost:7860/app/?t=400 to land in the dashboard after the ETCH-04 excursion.
 
 Quick API checks:
 

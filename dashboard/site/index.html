@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yield Copilot · Wafer defect intelligence</title>
+  <meta name="description" content="Yield Copilot classifies every wafer map, spots when one tool keeps producing the same defect, and tells engineers the likely cause, the lots at risk and the cost.">
+  <link rel="icon" href="/site/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/site.css">
+</head>
+<body class="home">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="logo" href="/" aria-label="Yield Copilot home">
+        <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M17.8 28.88A13 13 0 1 0 14.2 28.88L16 26.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><g fill="currentColor" opacity=".38"><rect x="9.5" y="9.5" width="4" height="4" rx=".6"/><rect x="14" y="9.5" width="4" height="4" rx=".6"/><rect x="18.5" y="9.5" width="4" height="4" rx=".6"/><rect x="9.5" y="14" width="4" height="4" rx=".6"/><rect x="14" y="14" width="4" height="4" rx=".6"/><rect x="9.5" y="18.5" width="4" height="4" rx=".6"/><rect x="14" y="18.5" width="4" height="4" rx=".6"/><rect x="18.5" y="18.5" width="4" height="4" rx=".6"/></g><rect x="18.5" y="14" width="4" height="4" rx=".6" fill="#e2232d"/></svg>
+        <span>Yield Copilot</span>
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#problem">Problem</a>
+        <a href="#product">Product</a>
+        <a href="#how">How it works</a>
+        <a href="#model">Model</a>
+        <a href="#who">Who it's for</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="link-quiet" href="/signin">Sign in</a>
+        <a class="btn btn-red btn-sm" href="/signin">Open the demo</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="wrap hero-copy">
+        <p class="eyebrow eyebrow-dark"><span class="dot-live"></span>AI yield copilot for semiconductor fabs</p>
+        <h1>Catch the excursion<br>before the next lot.</h1>
+        <p class="lede">Yield Copilot reads every wafer map as it leaves the tool, notices when one tool keeps producing the same defect, and tells the engineer the likely cause, the lots at risk and what it costs.</p>
+        <div class="hero-actions">
+          <a class="btn btn-red" href="/signin">Open the live demo <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn btn-ghost-dark" href="#how">See how it works</a>
+        </div>
+      </div>
+      <div class="wrap">
+        <figure class="product-shot">
+          <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span>yield-copilot / operations</span></div>
+          <img src="/site/img/app-operations.png" width="1440" height="900" alt="The Yield Copilot operations view: tool status, a live inspection feed and an Edge-Ring alert on ETCH-04 with its likely cause and exposure">
+        </figure>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats" aria-label="Key numbers">
+      <div class="wrap stats-row">
+        <div><b data-count="0.912" data-dec="3">0.912</b><span>macro-F1 across 9 defect patterns</span></div>
+        <div><b data-count="95" data-suffix="%">95%</b><span>of defective wafers caught</span></div>
+        <div><b>~10 ms</b><span>per wafer on a CPU</span></div>
+        <div><b data-count="811457" data-sep="1">811,457</b><span>real wafer maps in WM-811K</span></div>
+      </div>
+      <p class="wrap stats-note">Model scores are on the held-out validation lots. The test set is kept back for one final evaluation.</p>
+    </section>
+
+    <!-- BUILT ON -->
+    <section class="builton" aria-label="Built on">
+      <div class="wrap builton-row">
+        <span class="builton-label">Built on</span>
+        <span>WM-811K wafer maps</span>
+        <span>AMD Token Factory</span>
+        <span>PyTorch</span>
+        <span>FastAPI</span>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="section" id="problem">
+      <div class="wrap split">
+        <div class="reveal">
+          <p class="eyebrow">The problem</p>
+          <h2>The defect is on the map.<br>It is found too late.</h2>
+          <p class="body">After test, every wafer gets a map of which dies passed and which failed. The shape of the failures points at the process step that caused it: a ring at the edge, a scratch, a cluster in the centre.</p>
+          <p class="body">Those maps are checked by hand, in batches, or not at all. By the time someone notices that one tool keeps producing the same shape, it has already run more lots.</p>
+          <p class="source">Sources: WM-811K (Wu, Jang and Chen, IEEE Transactions on Semiconductor Manufacturing, 2015). Wafer value is the demo's stated assumption.</p>
+        </div>
+        <ul class="facts reveal">
+          <li><b>85%</b><div><h3>Most maps are clean</h3><p>Of the 172,950 labelled maps, 85% show no defect pattern. The few that matter are buried among them.</p></div></li>
+          <li><b>9</b><div><h3>Patterns, nine different causes</h3><p>Edge rings, scratches, centre clusters and donuts each point at a different tool or process problem.</p></div></li>
+          <li><b>$500k</b><div><h3>At risk per lot</h3><p>25 wafers at an assumed $20,000 each. Every lot a drifting tool runs before someone acts adds to it.</p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PRODUCT -->
+    <section class="section section-dark" id="product">
+      <div class="wrap split split-wide">
+        <div class="reveal">
+          <p class="eyebrow eyebrow-dark">The copilot</p>
+          <h2>From wafer map to decision in one view.</h2>
+          <p class="body body-dark">Every wafer is classified as it leaves the tool. When a pattern repeats on one tool, the copilot raises an alert, explains it and puts the decision in front of the engineer.</p>
+          <ul class="points">
+            <li><span class="pt-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg></span><div><h3>Classifies every wafer</h3><p>A calibrated CNN ensemble names the defect pattern in about 10 ms. When it is unsure, the wafer goes to a person instead of guessing.</p></div></li>
+            <li><span class="pt-ico"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 16.5v.5"/><path d="M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><div><h3>Spots the excursion</h3><p>An alert fires when one tool produces the same pattern three times within 24 hours.</p></div></li>
+            <li><span class="pt-ico"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg></span><div><h3>Explains the likely cause</h3><p>An LLM copilot on AMD Token Factory pulls the lot history, likely root cause and cost, and cites where each answer came from.</p></div></li>
+            <li><span class="pt-ico"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><div><h3>The engineer decides</h3><p>Hold the lots, open a ticket or dismiss. Every decision is logged with the time and who made it.</p></div></li>
+          </ul>
+        </div>
+
+        <div class="vignette reveal" aria-label="Example alert from the demo line">
+          <div class="vg-head"><span class="vg-badge"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 16.5v.5"/><path d="M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Excursion</span><span class="vg-sample">From the demo line</span></div>
+          <h3 class="vg-title">Edge-Ring on ETCH-04</h3>
+          <p class="vg-sub">3 wafers in 24 h · fired 00:06 in LOT-010</p>
+          <div class="vg-wafers">
+            <figure><img src="/site/img/wafer-edge-ring-1.png" alt="Edge-Ring wafer map"><figcaption>Edge-Ring</figcaption></figure>
+            <figure><img src="/site/img/wafer-edge-ring-2.png" alt="Edge-Ring wafer map"><figcaption>Edge-Ring</figcaption></figure>
+            <figure><img src="/site/img/wafer-edge-ring-3.png" alt="Edge-Ring wafer map"><figcaption>Edge-Ring</figcaption></figure>
+          </div>
+          <div class="vg-kv">
+            <div><span>Lots run since alert</span><b>4</b></div>
+            <div><span>Exposure since alert</span><b>$1.62M</b></div>
+          </div>
+          <p class="vg-label">Likely cause · triage, not diagnosis</p>
+          <p class="vg-text">Edge temperature or plasma non-uniformity. Check focus and edge ring wear and edge etch-rate uniformity.</p>
+          <div class="vg-actions"><span class="vg-btn vg-btn-red">Hold lots</span><span class="vg-btn">Open ticket</span><span class="vg-btn">Dismiss</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section" id="how">
+      <div class="wrap">
+        <div class="head-center reveal">
+          <p class="eyebrow">How it works</p>
+          <h2>From the test floor to a held lot</h2>
+          <p class="body">Three steps, each one you can inspect in the demo.</p>
+        </div>
+        <ol class="steps">
+          <li class="step reveal">
+            <div class="step-visual vis-gallery" aria-label="Eight of the defect patterns the model recognises">
+              <figure><img src="/site/img/wafer-center.png" alt=""><figcaption>Center</figcaption></figure>
+              <figure><img src="/site/img/wafer-donut.png" alt=""><figcaption>Donut</figcaption></figure>
+              <figure><img src="/site/img/wafer-edge-ring.png" alt=""><figcaption>Edge-Ring</figcaption></figure>
+              <figure><img src="/site/img/wafer-edge-loc.png" alt=""><figcaption>Edge-Loc</figcaption></figure>
+              <figure><img src="/site/img/wafer-loc.png" alt=""><figcaption>Loc</figcaption></figure>
+              <figure><img src="/site/img/wafer-random.png" alt=""><figcaption>Random</figcaption></figure>
+              <figure><img src="/site/img/wafer-near-full.png" alt=""><figcaption>Near-full</figcaption></figure>
+              <figure><img src="/site/img/wafer-none.png" alt=""><figcaption>No pattern</figcaption></figure>
+            </div>
+            <span class="step-n">01</span>
+            <h3>Inspect</h3>
+            <p>Each wafer map is read the moment it leaves the tool. The model sorts it into one of eight defect patterns or no pattern, and states how confident it is.</p>
+          </li>
+          <li class="step reveal">
+            <div class="step-visual vis-pair" aria-label="A scratch wafer and where the model looked">
+              <figure><img src="/site/img/wafer-scratch.png" alt="Scratch wafer map"><figcaption>Wafer map</figcaption></figure>
+              <figure><img src="/site/img/wafer-scratch-attention.png" alt="The same wafer with the model's attention highlighted on the scratch"><figcaption>Model attention</figcaption></figure>
+            </div>
+            <span class="step-n">02</span>
+            <h3>Explain</h3>
+            <p>Every call can be opened: the map, the area that drove the decision, and the score for all nine patterns. Uncertain wafers are flagged for a person.</p>
+          </li>
+          <li class="step reveal">
+            <div class="step-visual vis-log" aria-label="Example decision log">
+              <div class="log-row"><span class="log-dot red"></span><div><b>Alert raised</b><small>Edge-Ring ×3 on ETCH-04 · 00:06</small></div></div>
+              <div class="log-row"><span class="log-dot"></span><div><b>Copilot briefed</b><small>Edge ring wear likely · 4 lots exposed</small></div></div>
+              <div class="log-row"><span class="log-dot good"></span><div><b>Lots held</b><small>by the shift engineer · 00:21</small></div></div>
+            </div>
+            <span class="step-n">03</span>
+            <h3>Act</h3>
+            <p>The engineer holds the lots, opens a maintenance ticket or dismisses the alert. The copilot recommends; a person decides.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- MODEL -->
+    <section class="section section-soft" id="model">
+      <div class="wrap split">
+        <div class="reveal">
+          <p class="eyebrow">Measured honestly</p>
+          <h2>Scored on lots it has never seen.</h2>
+          <p class="body">A model can look perfect when wafers from the same lot end up in both training and testing. We split by lot, so every score below comes from lots the model never trained on.</p>
+          <ul class="checks">
+            <li><b>Grouped by lot.</b> No lot appears in more than one split.</li>
+            <li><b>Calibrated.</b> When it says 90%, it is right about 90% of the time.</li>
+            <li><b>Knows when to ask.</b> Under 1% of wafers go to a person for review.</li>
+            <li><b>Test set kept back</b> for one final evaluation.</li>
+          </ul>
+          <a class="link-arrow" href="/signin?next=model">See every chart in the demo <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+        <figure class="card bars reveal" id="perclass">
+          <figcaption><b>F1 score by defect pattern</b><span id="perclass-note">Validation lots · v0-ens3</span></figcaption>
+          <div class="bars-body" id="bars"></div>
+          <p class="bars-foot">F1 combines how many of each pattern the model finds with how many of its calls are right. 1.0 is perfect.</p>
+        </figure>
+      </div>
+    </section>
+
+    <!-- WHO -->
+    <section class="section" id="who">
+      <div class="wrap">
+        <div class="head-center reveal">
+          <p class="eyebrow">Who it's for</p>
+          <h2>Built for the people who own yield</h2>
+        </div>
+        <div class="who">
+          <article class="who-card reveal">
+            <span class="who-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg></span>
+            <p class="eyebrow">Yield and process engineers</p>
+            <h3>Find the tool behind the pattern</h3>
+            <ul class="ticks">
+              <li>Every wafer classified, not a weekly sample</li>
+              <li>Likely cause with sources for each alert</li>
+              <li>Ask follow-up questions in plain English</li>
+            </ul>
+          </article>
+          <article class="who-card reveal">
+            <span class="who-ico"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+            <p class="eyebrow">Fab and shift managers</p>
+            <h3>See the cost before it grows</h3>
+            <ul class="ticks">
+              <li>Exposure in dollars as lots keep running</li>
+              <li>One view of every tool on the line</li>
+              <li>A log of who decided what, and when</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="wrap cta-inner reveal">
+        <h2>See it catch an excursion.</h2>
+        <p>The demo replays 500 real wafers through four etch tools. Press play and watch ETCH-04 drift.</p>
+        <div class="hero-actions">
+          <a class="btn btn-red" href="/signin">Open the live demo <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn btn-ghost-dark" href="https://github.com/yatsensei/AMD-Hackathon" rel="noopener">View the code</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-inner">
+      <a class="logo logo-sm" href="/"><svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M17.8 28.88A13 13 0 1 0 14.2 28.88L16 26.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><g fill="currentColor" opacity=".38"><rect x="9.5" y="9.5" width="4" height="4" rx=".6"/><rect x="14" y="9.5" width="4" height="4" rx=".6"/><rect x="18.5" y="9.5" width="4" height="4" rx=".6"/><rect x="9.5" y="14" width="4" height="4" rx=".6"/><rect x="14" y="14" width="4" height="4" rx=".6"/><rect x="9.5" y="18.5" width="4" height="4" rx=".6"/><rect x="14" y="18.5" width="4" height="4" rx=".6"/><rect x="18.5" y="18.5" width="4" height="4" rx=".6"/></g><rect x="18.5" y="14" width="4" height="4" rx=".6" fill="#e2232d"/></svg><span>Yield Copilot</span></a>
+      <p>Built for the AMD Developer Hackathon: ACT III. The demo line is simulated; the wafers are real (WM-811K).</p>
+    </div>
+  </footer>
+
+  <script src="/site/site.js"></script>
+</body>
+</html>
