@@ -1,5 +1,5 @@
 ---
-title: Yield Copilot
+title: Sentry
 emoji: 🏭
 colorFrom: red
 colorTo: gray
@@ -26,7 +26,7 @@ AMD Developer Hackathon ACT III — Track 1 "Intelligent Industry".
 
 ## Hugging Face Space (Docker)
 
-The Space serves the Yield Copilot dashboard:
+The Space serves the Sentry dashboard:
 
 ```text
 uvicorn dashboard.server:app --host 0.0.0.0 --port 7860
@@ -43,7 +43,8 @@ Build/run instructions and blockers: [`docs/DEPLOY_SPACE.md`](docs/DEPLOY_SPACE.
 pip install -r requirements.txt -r dashboard/requirements.txt torch
 cp .env.example .env   # set AMD_API_KEY, AMD_BASE_URL, AMD_MODEL
 uvicorn dashboard.server:app --port 8000
-# open http://localhost:8000/?t=400
+# open http://localhost:8000          homepage -> Sign in -> dashboard
+# or   http://localhost:8000/app/?t=400 straight into the dashboard, after the ETCH-04 excursion
 ```
 
 ## Phase 5 — run the agent (CLI)

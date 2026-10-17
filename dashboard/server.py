@@ -1,4 +1,4 @@
-"""Yield Copilot dashboard (Phase 6): FastAPI backend + static single-page UI.
+"""Sentry dashboard (Phase 6): FastAPI backend + static single-page UI.
 
     pip install -r dashboard/requirements.txt
     uvicorn dashboard.server:app --port 8000          # from the repo root, then open http://localhost:8000
@@ -25,8 +25,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -46,7 +46,7 @@ os.environ.setdefault("WAFER_MODEL_DIR", str(MODEL_DIR))   # the agent's CNN bac
 MAP_RGBA = np.array([[0, 0, 0, 0], [214, 218, 225, 255], [179, 18, 27, 255]], dtype=np.uint8)
 REPORT_DIR = REPO_ROOT / "docs" / "results" / "report"
 
-app = FastAPI(title="Yield Copilot", docs_url="/api/docs", redoc_url=None)
+app = FastAPI(title="Sentry", docs_url="/api/docs", redoc_url=None)
 _lock = threading.Lock()
 _decisions: list[dict] = []          # human-in-the-loop decisions (in memory for the demo)
 
@@ -343,4 +343,28 @@ def report_chart(name: str):
     return FileResponse(p, media_type="image/png")
 
 
-app.mount("/", StaticFiles(directory=HERE / "static", html=True), name="static")
+# ----------------------------------------------------------------------------- pages
+# /         product homepage (dashboard/site)
+# /signin   demo sign-in: no accounts, it only remembers a display name in the browser
+# /app/     the dashboard itself (dashboard/static)
+SITE = HERE / "site"
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(SITE / "index.html")
+
+
+@app.get("/signin", include_in_schema=False)
+def signin():
+    return FileResponse(SITE / "signin.html")
+
+
+@app.get("/app", include_in_schema=False)
+def app_root(request: Request):
+    q = request.url.query
+    return RedirectResponse("/app/" + (f"?{q}" if q else ""))
+
+
+app.mount("/site", StaticFiles(directory=SITE), name="site")
+app.mount("/app", StaticFiles(directory=HERE / "static", html=True), name="app")

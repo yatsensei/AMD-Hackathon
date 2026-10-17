@@ -134,3 +134,21 @@ def test_agent_prompt_yolo_and_sparse_evidence():
     assert "uncalibrated" in low
     assert "mixed or sparse" in low or "sparse pattern" in low
     assert "validated automatic acceptance" in low or "validated review policy" in low
+
+
+def test_site_pages_and_app_route():
+    home = client.get("/")
+    assert home.status_code == 200 and "Catch the excursion" in home.text
+    assert client.get("/signin").status_code == 200
+    r = client.get("/app?t=330", follow_redirects=False)
+    assert r.status_code == 307 and r.headers["location"] == "/app/?t=330"
+    app_page = client.get("/app/")
+    assert app_page.status_code == 200 and 'id="view-ops"' in app_page.text
+    assert client.get("/app/app.js").status_code == 200
+
+
+def test_site_assets_exist():
+    import re
+    html = client.get("/").text + client.get("/signin").text
+    for src in set(re.findall(r'(?:src|href)="(/site/[^"]+)"', html)):
+        assert client.get(src).status_code == 200, src

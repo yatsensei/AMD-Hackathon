@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Sentry</title>
+  <link rel="icon" href="/site/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/site/site.css">
+</head>
+<body>
+  <div class="signin">
+    <aside class="si-side">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <a class="logo" href="/" aria-label="Sentry home">
+        <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M17.8 28.88A13 13 0 1 0 14.2 28.88L16 26.9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><g fill="currentColor" opacity=".38"><rect x="9.5" y="9.5" width="4" height="4" rx=".6"/><rect x="14" y="9.5" width="4" height="4" rx=".6"/><rect x="18.5" y="9.5" width="4" height="4" rx=".6"/><rect x="9.5" y="14" width="4" height="4" rx=".6"/><rect x="14" y="14" width="4" height="4" rx=".6"/><rect x="9.5" y="18.5" width="4" height="4" rx=".6"/><rect x="14" y="18.5" width="4" height="4" rx=".6"/><rect x="18.5" y="18.5" width="4" height="4" rx=".6"/></g><rect x="18.5" y="14" width="4" height="4" rx=".6" fill="#e2232d"/></svg>
+        <span>Sentry</span>
+      </a>
+      <div class="si-brand">
+        <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M17.8 28.88A13 13 0 1 0 14.2 28.88L16 26.9Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><g fill="currentColor" opacity=".38"><rect x="9.5" y="9.5" width="4" height="4" rx=".6"/><rect x="14" y="9.5" width="4" height="4" rx=".6"/><rect x="18.5" y="9.5" width="4" height="4" rx=".6"/><rect x="9.5" y="14" width="4" height="4" rx=".6"/><rect x="14" y="14" width="4" height="4" rx=".6"/><rect x="9.5" y="18.5" width="4" height="4" rx=".6"/><rect x="14" y="18.5" width="4" height="4" rx=".6"/><rect x="18.5" y="18.5" width="4" height="4" rx=".6"/></g><rect x="18.5" y="14" width="4" height="4" rx=".6" fill="#e2232d"/></svg>
+        <h1>Sentry</h1>
+        <p>Every wafer classified. Every excursion explained. Every decision yours.</p>
+        <div class="si-wafers" aria-hidden="true">
+          <img src="/site/img/wafer-edge-ring.png" alt="">
+          <img src="/site/img/wafer-center.png" alt="">
+          <img src="/site/img/wafer-donut.png" alt="">
+          <img src="/site/img/wafer-near-full.png" alt="">
+        </div>
+      </div>
+      <p class="si-foot">Simulated etch line · real WM-811K wafers</p>
+    </aside>
+
+    <main class="si-main">
+      <form class="si-form" id="signin-form" novalidate>
+        <a class="si-back" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Back to home</a>
+        <h2>Sign in</h2>
+        <p class="sub">Use your work email to open the line.</p>
+        <label class="field"><span>Work email</span><input id="email" type="email" autocomplete="email" placeholder="you@fab.com"></label>
+        <label class="field"><span>Password</span><input id="password" type="password" autocomplete="current-password"></label>
+        <button class="btn btn-red" type="submit">Sign in</button>
+
+        <div class="divider">or continue with a demo role</div>
+        <div class="roles">
+          <button class="role" type="button" data-name="Yield engineer" data-role="Etch bay · day shift"><b>Yield engineer</b><small>Etch bay · day shift</small></button>
+          <button class="role" type="button" data-name="Fab manager" data-role="Line overview"><b>Fab manager</b><small>Line overview</small></button>
+        </div>
+
+        <p class="si-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg><span>This is a demo. No account is created and nothing you type leaves your browser.</span></p>
+      </form>
+    </main>
+  </div>
+  <script src="/site/site.js"></script>
+</body>
+</html>

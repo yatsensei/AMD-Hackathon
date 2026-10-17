@@ -1,4 +1,4 @@
-# Hugging Face Docker Space — Yield Copilot dashboard
+# Hugging Face Docker Space — Sentry dashboard
 # https://huggingface.co/docs/hub/spaces-sdks-docker
 #
 # Serves dashboard.server:app on 0.0.0.0:7860 with models/v0-ens3 and the

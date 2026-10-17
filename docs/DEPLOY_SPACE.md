@@ -1,6 +1,6 @@
 # Deploy as a Hugging Face Docker Space
 
-The Yield Copilot dashboard is packaged for a **Docker** Space. The image serves
+The Sentry dashboard is packaged for a **Docker** Space. The image serves
 `dashboard.server:app` with Uvicorn on `0.0.0.0:7860`, using the validation demo
 stream and `models/v0-ens3`. It does **not** include the 2 GB raw WM-811K dataset;
 wafer maps for the 500-stream demo ship in `dashboard/data/stream_maps.npz`.
@@ -67,7 +67,7 @@ docker run --rm -p 7860:7860 \
   yield-copilot-space
 ```
 
-Then open http://localhost:7860 (try `?t=400` to land after the ETCH-04 excursion).
+Then open http://localhost:7860 for the homepage, or http://localhost:7860/app/?t=400 to land in the dashboard after the ETCH-04 excursion.
 
 Quick API checks:
 
