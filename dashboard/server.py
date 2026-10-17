@@ -1,4 +1,4 @@
-"""Yield Copilot dashboard (Phase 6): FastAPI backend + static single-page UI.
+"""Sentry dashboard (Phase 6): FastAPI backend + static single-page UI.
 
     pip install -r dashboard/requirements.txt
     uvicorn dashboard.server:app --port 8000          # from the repo root, then open http://localhost:8000
@@ -46,7 +46,7 @@ os.environ.setdefault("WAFER_MODEL_DIR", str(MODEL_DIR))   # the agent's CNN bac
 MAP_RGBA = np.array([[0, 0, 0, 0], [214, 218, 225, 255], [179, 18, 27, 255]], dtype=np.uint8)
 REPORT_DIR = REPO_ROOT / "docs" / "results" / "report"
 
-app = FastAPI(title="Yield Copilot", docs_url="/api/docs", redoc_url=None)
+app = FastAPI(title="Sentry", docs_url="/api/docs", redoc_url=None)
 _lock = threading.Lock()
 _decisions: list[dict] = []          # human-in-the-loop decisions (in memory for the demo)
 

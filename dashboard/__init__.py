@@ -1,1 +1,1 @@
-"""Yield Copilot dashboard: FastAPI backend + static frontend (dashboard/static)."""
+"""Sentry dashboard: FastAPI backend + static frontend (dashboard/static)."""

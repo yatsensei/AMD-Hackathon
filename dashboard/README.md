@@ -1,4 +1,4 @@
-# Yield Copilot dashboard
+# Sentry dashboard
 
 FastAPI backend plus a static single-page UI (no build step). It replays the scored
 validation stream as a live etch line, so every screen shows real WM-811K wafers.

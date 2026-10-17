@@ -1,4 +1,4 @@
-/* Yield Copilot site: nav state, scroll reveals, live per-class chart, demo sign-in. */
+/* Sentry site: nav state, scroll reveals, live per-class chart, demo sign-in. */
 (() => {
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];

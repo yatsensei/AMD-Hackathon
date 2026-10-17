@@ -1,4 +1,4 @@
-/* Yield Copilot dashboard: replays the scored factory stream and renders it.
+/* Sentry dashboard: replays the scored factory stream and renders it.
    Plain JS, no build step. All data comes from /api (dashboard/server.py). */
 "use strict";
 

@@ -1,5 +1,5 @@
 ---
-title: Yield Copilot
+title: Sentry
 emoji: 🏭
 colorFrom: red
 colorTo: gray
@@ -26,7 +26,7 @@ AMD Developer Hackathon ACT III — Track 1 "Intelligent Industry".
 
 ## Hugging Face Space (Docker)
 
-The Space serves the Yield Copilot dashboard:
+The Space serves the Sentry dashboard:
 
 ```text
 uvicorn dashboard.server:app --host 0.0.0.0 --port 7860
