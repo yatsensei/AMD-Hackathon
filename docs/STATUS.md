@@ -45,12 +45,12 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Ph
 ## Phase 4 — factory simulation (Nasser & Shefali Cat)
 | Item | Owner | Status | Notes |
 |---|---|---|---|
-| `wafer/factory/root_causes.json` (9 patterns) | Nasser / Shefali Cat | 🟡 | Center + Edge-Ring have sources (not read in full); others triage heuristic |
+| `wafer/factory/root_causes.json` (9 patterns) | Nasser / Shefali Cat | 🟡 | 7 of 8 defect patterns cited (arXiv 2607.00961 Table 1, US patents, Minitab), all from search excerpts: open each link to confirm, then drop "Not read in full". Near-full: no source found |
 | `build_stream` + `scripts/make_stream.py` | Nasser / Shefali Cat | ✅ | Val ETCH-04 Edge-Ring from LOT-010; `stream_val_unscored.csv` committed |
-| `check_alert`, `lots_caught_early`, `estimate_impact` | Nasser / Shefali Cat | ✅ | Observed vs assumed-full-lot exposure; no false savings claims |
+| `check_alert`, `lots_caught_early`, `estimate_impact` | Nasser / Shefali Cat | ✅ | Observed vs assumed-full-lot exposure; no false savings claims; one alert per tool, later patterns in `also_seen` |
 | `check_lot_history` + `score_stream` | Phase 5 | ✅ | Compact LLM payload; full events local; as_of-safe alerts |
-| Scored stream with CNN predictions | Team | 🟡 | Regenerate: `python -m wafer.agent --score-stream …` (needs `labeled.pkl`); not committed |
-| Rebuild stream from test split | Team | ❌ | Only after the final test evaluation |
+| Scored stream with CNN predictions | Nasser | ✅ | `streams/stream_val.csv` (models/v0, built on Kaggle). 264/275 excursion wafers called Edge-Ring; alert ETCH-04/Edge-Ring at LOT-010, none on lots 1–9. Extra alert ETCH-04/Edge-Loc at LOT-013 = CNN misreads of Edge-Ring wafers |
+| Test-split stream | Nasser | 🟡 | `streams/stream_test_unscored.csv` committed (500 test wafers, no overlap with val stream). Score it only after the final test evaluation: `python scripts/make_stream.py --split test` |
 
 ## Phase 5 — agent
 | Item | Owner | Status | Notes |

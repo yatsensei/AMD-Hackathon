@@ -12,18 +12,18 @@
     "source": "KAIST College of Engineering research webzine (centre circular pattern from a CMP uniformity problem), https://breakthroughs.kaist.ac.kr/sub02/view/id/219; arXiv 2607.00961, root-cause table adapted from Shin et al. 2024 (irregular RF operation or unusual liquid flow), https://arxiv.org/abs/2607.00961. Not read in full."
   },
   "Donut": {
-    "cause": "Ring-shaped failures at mid radius: temperature or gas-flow non-uniformity forming an annulus",
-    "machine": "CVD deposition or thermal (RTP/anneal) chamber",
-    "tool_family": "DEP",
-    "recommended_action": "Review chamber temperature zones and gas distribution for the affected tool",
-    "source": "Triage heuristic; no citation yet"
+    "cause": "Ring of failures at mid radius: residue left after photoresist cleaning/strip",
+    "machine": "Photoresist strip / post-strip clean",
+    "tool_family": "CLEAN",
+    "recommended_action": "Check resist strip and post-strip clean recipes and residue inspection for the affected tool",
+    "source": "arXiv 2607.00961, Table 1 adapted from Shin et al. 2024, https://arxiv.org/abs/2607.00961 (residue that resists removal during photoresist cleaning). Not read in full."
   },
   "Edge-Loc": {
-    "cause": "Localised failures at one part of the edge: clamping, edge-bead removal or handling contact",
-    "machine": "Lithography track (edge-bead removal) or wafer handling",
-    "tool_family": "LITHO",
-    "recommended_action": "Inspect wafer chuck/clamp ring and edge-bead removal nozzle alignment",
-    "source": "Triage heuristic; no citation yet"
+    "cause": "Localised failures on part of the edge: irregular annealing temperature or load-lock valve impurities; handling damage at the edge",
+    "machine": "Anneal (thermal) chamber load-lock, or wafer handling",
+    "tool_family": "THERMAL",
+    "recommended_action": "Check anneal temperature uniformity and load-lock valve condition; inspect edge handling contact points",
+    "source": "arXiv 2607.00961, Table 1 adapted from Shin et al. 2024, https://arxiv.org/abs/2607.00961, citing Hansen et al. 1997 (irregular temperature annealing or load-lock valve impurities). Not read in full."
   },
   "Edge-Ring": {
     "cause": "Failures around the full wafer edge: edge temperature or plasma non-uniformity (RTP temperature regulation, edge etch/deposition)",
@@ -37,28 +37,28 @@
     "machine": "Any process tool; often deposition or lithography",
     "tool_family": "ANY",
     "recommended_action": "Run particle check on tools the lot visited; review defect inspection images",
-    "source": "Triage heuristic; no citation yet"
+    "source": "arXiv 2607.00961, Table 1 adapted from Shin et al. 2024, https://arxiv.org/abs/2607.00961 (entry seen only in part: vacuum-pressure differences). Not read in full; cause is our triage assumption."
   },
   "Near-full": {
     "cause": "Almost the whole wafer fails: a gross process failure (missed or wrong step, mis-processed recipe)",
     "machine": "Process step failure; check recipe and lithography exposure",
     "tool_family": "ANY",
     "recommended_action": "Stop the lot; verify recipe and step history before processing more wafers",
-    "source": "Triage heuristic; no citation yet"
+    "source": "Triage heuristic; no citation yet (searched: no source found giving a Near-full cause)"
   },
   "Random": {
     "cause": "Failures spread randomly over the wafer: background particle contamination",
     "machine": "Cleanroom environment or wet clean",
     "tool_family": "CLEAN",
     "recommended_action": "Check cleanroom particle counts and wet-clean bath chemistry",
-    "source": "Triage heuristic; no citation yet"
+    "source": "US Patent 10,922,807 (cleanroom particles as a random cause spread evenly over the wafer), https://patents.google.com/patent/US10922807; Minitab blog 'Enhance Integrated Circuit Yields with a Wafer Map' (random defect density tracks cleanroom cleanliness), https://blog.minitab.com/en/enhance-circuit-yields-wafer-map. Not read in full."
   },
   "Scratch": {
-    "cause": "A line of failures: mechanical scratch",
+    "cause": "A line of failures: mechanical scratch from handling-robot misalignment or careless handling, or CMP micro-scratches",
     "machine": "CMP polisher or wafer-handling robot",
     "tool_family": "CMP",
     "recommended_action": "Inspect CMP pad conditioner and robot end-effector for debris",
-    "source": "Triage heuristic; no citation yet"
+    "source": "US Patent 5,913,105 (scratches from mechanical contact: handling-robot misalignment or careless handling), https://patents.google.com/patent/US5913105; US Patent 9,442,077 (CMP-induced scratches), https://patents.google.com/patent/US9442077. Not read in full."
   },
   "none": {
     "cause": "No spatial failure pattern",
