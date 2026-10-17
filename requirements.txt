@@ -12,5 +12,11 @@ matplotlib>=3.7
 tqdm>=4.65
 pytest>=7.4
 safetensors>=0.4
-# torch / torchvision: NOT here. Use the ROCm build on the AMD box (scripts/amd/), the CPU wheel elsewhere.
+# Phase 5 agent (AMD Token Factory OpenAI-compatible API). Needed for `python -m wafer.agent`.
+openai>=1.40
+python-dotenv>=1.0
+# torch / torchvision: NOT here. Install separately for CNN train/infer/score_stream
+# (ROCm on the AMD box via scripts/amd/; CPU wheel elsewhere: pip install torch torchvision).
 # download only: kaggle
+
+

@@ -2,50 +2,62 @@
 
 AMD Developer Hackathon ACT III — Track 1 "Intelligent Industry".
 
-- **Spec (source of truth for Phases 1–2):** [`docs/specs/SPEC_phase1_phase2.md`](docs/specs/SPEC_phase1_phase2.md)
-- **Why the spec looks the way it does:** [`docs/specs/REVIEW_phase1_phase2.md`](docs/specs/REVIEW_phase1_phase2.md)
-- **What's done:** [`docs/STATUS.md`](docs/STATUS.md) · **latest results:** [`docs/results/OVERNIGHT.md`](docs/results/OVERNIGHT.md)
-- **For teammates (classifier API, data, YOLO scoring):** [`docs/HANDOFF.md`](docs/HANDOFF.md)
-- **Hackathon brief (judging, rules):** [`docs/HACKATHON_BRIEF.md`](docs/HACKATHON_BRIEF.md)
-- **Our scope:** Phases 1–2 (data + CNN). Agent, dashboard and YOLO are owned by teammates; `wafer/infer_mock.py` shows them the API they'll get.
+- **Spec (Phases 1–2):** [`docs/specs/SPEC_phase1_phase2.md`](docs/specs/SPEC_phase1_phase2.md)
+- **What's done:** [`docs/STATUS.md`](docs/STATUS.md) · **CNN results:** [`docs/results/OVERNIGHT.md`](docs/results/OVERNIGHT.md)
+- **Teammate hand-off (data, CNN, factory, agent):** [`docs/HANDOFF.md`](docs/HANDOFF.md)
+- **Hackathon brief:** [`docs/HACKATHON_BRIEF.md`](docs/HACKATHON_BRIEF.md)
+- **AMD / Token Factory notes:** [`docs/AMD_SETUP.md`](docs/AMD_SETUP.md)
 
-## On an AMD GPU (optional: no credits right now, so models are trained on CPU)
+**Working today:** Phases 1–2 (data + CNN), Phase 4 (factory stream/alerts), **Phase 5 (Token Factory agent + CNN tools)**.  
+**Pending:** YOLO adapter (Phase 3), Streamlit dashboard (Phase 6), final test-set eval, end-to-end demo polish (Phase 7).
 
-**Step-by-step guide: [`docs/AMD_SETUP.md`](docs/AMD_SETUP.md).** Notebook version: [`notebooks/amd_e0.ipynb`](notebooks/amd_e0.ipynb). Terminal version:
+## Phase 5 — run the agent
+
+```bash
+pip install -r requirements.txt torch torchvision   # torch needed to score wafers with the CNN
+cp .env.example .env                                 # set AMD_API_KEY, AMD_BASE_URL, AMD_MODEL
+# AMD_MODEL must be an id from GET $AMD_BASE_URL/models — do not guess
+
+# Once: build maps if needed, then score the committed unscored val stream
+scripts/download_data.sh && python scripts/prepare_data.py   # → data/interim/labeled.pkl
+python -m wafer.agent --score-stream streams/stream_val_unscored.csv -o streams/stream_val.csv
+
+# Ask (stdout = answer only; use --debug for timings)
+python -m wafer.agent -q "What is happening on ETCH-04?" \
+  --stream streams/stream_val.csv --as-of "2026-10-13 04:10"
+```
+
+```python
+from wafer.agent import WaferAgent
+import pandas as pd
+agent = WaferAgent.from_env(pd.read_csv("streams/stream_val.csv"), as_of="2026-10-13 04:10")
+print(agent.ask("What exposure has been observed?")["answer"])
+```
+
+Classifier backends: `from wafer.classifiers import get_classifier` — **cnn** default; **yolo** raises “not available yet” (no silent CNN fallback). Details: [`docs/HANDOFF.md`](docs/HANDOFF.md) §3b.
+
+## On an AMD GPU (optional — CNN was trained on CPU)
+
+**Guide:** [`docs/AMD_SETUP.md`](docs/AMD_SETUP.md). The live AMD component of the demo is the **agent LLM on Token Factory**, not CNN training.
 
 ```bash
 git clone <this repo> && cd AMD-Hackathon
-export KAGGLE_API_TOKEN=...                      # on the instance, never committed
-scripts/amd/start_container.sh                  # ROCm PyTorch container, repo at /workspace (re-run to re-attach)
-# inside the container:
-scripts/amd/bootstrap.sh                        # deps (never touches torch), GPU check -> docs/results/env_amd.json
-tmux new -s e0 'scripts/amd/run_e0.sh'          # data -> E0 x5 seeds in parallel -> models/v0 -> val report
+export KAGGLE_API_TOKEN=...                      # never commit it
+scripts/amd/start_container.sh
+# inside: scripts/amd/bootstrap.sh && tmux new -s e0 'scripts/amd/run_e0.sh'
 ```
 
-Then commit `docs/results/` (leaderboard, `v0_val/`, `data_report.md`, `env_amd.json`) and `models/v0/`, so everyone (including Claude) can read the results without GPU access.
-
-Other entry points: `python -m wafer.train --config <yaml> [--seed N]`, `scripts/run_sweep.sh configs/tier1/*.yaml`, `python -m wafer.export --runs <runs> --version vN [--tta]`, `python -m wafer.evaluate --model models/vN` (val) / `--final` (test, once), `scripts/bench_latency.py --model models/vN`.
-
-## For the agent and dashboard (Phases 5–6)
-
-```python
-from wafer.infer_mock import classify, classify_batch, explain   # today: same keys, heuristic numbers
-from wafer.infer import classify, classify_batch, explain        # once models/v0 exists ($WAFER_MODEL_DIR, else models/v1, else models/v0)
-from wafer.viz import render_wafer, render_heatmap
-```
+Other CNN entry points: `python -m wafer.train --config <yaml>`, `python -m wafer.export`, `python -m wafer.evaluate --model models/vN` (val) / `--final` (test, once).
 
 ## Phase 1 — build the dataset
 
 ```bash
 pip install -r requirements.txt
 export KAGGLE_API_TOKEN=...                      # never commit it
-pip install "kaggle>=2" && scripts/download_data.sh  # checks the SHA-256 recorded in docs/results/data_report.md
+pip install "kaggle>=2" && scripts/download_data.sh
 
-python scripts/prepare_data.py                    # critical path: data/processed/wafers_s64.npz + metadata.parquet
-python scripts/prepare_data.py --sizes 64 96 --yolo   # plus the non-critical outputs
-pytest                                            # synthetic tests always; real-data tests once data/ exists
+python scripts/prepare_data.py                    # wafers_s64.npz + metadata.parquet + labeled.pkl
+pytest                                            # synthetic always; real-data tests once data/ exists
 ```
 
-The first person to run `prepare_data.py` on the real file commits `docs/results/data_report.md`. It records the file's SHA-256, and everyone else's run refuses to unpickle a file that doesn't match it.
-
-If the split search can't meet the minimum per-class counts (rare classes concentrated in few lots), it says how far off the closest seed was. Lower the minimum with `--min-count Near-full=N` and add a line to the spec's Decisions Log.
+The first person to run `prepare_data.py` on the real file commits `docs/results/data_report.md` (SHA-256 of `LSWMD.pkl`).

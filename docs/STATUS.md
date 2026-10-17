@@ -1,6 +1,6 @@
 # Status board
 
-One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ done · 🟡 in progress / partly done · ❌ not started. Update it in every PR.
+One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Phases 4–5. ✅ done · 🟡 in progress / partly done · ❌ not started. Update it in every PR.
 
 ## Phase 1 — data (Nasser & Jina)
 | Item | Owner | Status | Notes |
@@ -11,7 +11,7 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | Encodings A + B, scratch-survival tests (3.5) | Nasser / Jina | ✅ | |
 | Duplicates → lot linking (3.6) | Nasser / Jina | ✅ | 3,250 duplicate groups, 14 with conflicting labels; giant linked group pinned to train |
 | Grouped split with seed search (3.7) | Nasser / Jina | ✅ | Seed 98, 72/14/14, worst class-share deviation 7.5%; Near-full in 137 lots |
-| **`wafers_s64.npz` + `metadata.parquet`** | Nasser / Jina | ✅ | Built in Claude's environment (7 min). Not in git: rebuild anywhere with `scripts/prepare_data.py` (same SHA-256 → same split) |
+| **`wafers_s64.npz` + `metadata.parquet`** | Nasser / Jina | ✅ | Built in Claude's environment (7 min). Not in git: rebuild with `scripts/prepare_data.py` |
 | `docs/results/data_report.md` | Nasser / Jina | ✅ | Committed |
 | `wafers_s96.npz`, `yolo_data/` (non-critical) | Nasser / Jina | ❌ | `--sizes 64 96 --yolo` |
 | `wafer/viz.py` (`render_wafer`, `render_fractions`, `render_heatmap`) | Nasser / Jina | ✅ | |
@@ -26,13 +26,44 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4. ✅ don
 | Calibration, operating point, abstention (`calibrate.py`, `decision.py`) | Anisha / Akein | ✅ | Tested on toy data |
 | `metrics.py`, `evaluate.py` (val; `--final` once; `--predictions` CSV) | Anisha / Akein | ✅ | |
 | `wafer/infer.py` + `wafer/explain.py` + `wafer/export.py` | Anisha / Akein | ✅ | Serving `models/v0` (CPU); sanity inputs pass |
-| E0 baseline → `models/v0` | Anisha / Akein | ✅ (CPU) | Val macro-F1 0.902 (CI 0.885–0.913), 4 ms/wafer; `models/v0-tta` 0.911 at 27 ms; `models/v0-ens3` 0.912 at 9.5 ms. **Trained on CPU**: AMD retrain pending a GPU. See `docs/results/OVERNIGHT.md` |
+| E0 baseline → `models/v0` | Anisha / Akein | ✅ (CPU) | Val macro-F1 0.902; `v0-tta` 0.911; `v0-ens3` 0.912. **CPU-trained**. See `OVERNIGHT.md` |
 | E0b classical baseline | Claude | ✅ | Val macro-F1 0.865; CNN significantly better (+0.037) |
-| Tier 1 sweep + E-LEAK + E-COMB | Anisha / Akein | 🟡 | Single-seed CPU screening done (E-LEAK: no inflation; E1, E2, E3b: n.s.; TTA +0.009). Needs 5 seeds on an AMD GPU |
+| Tier 1 sweep + E-LEAK + E-COMB | Anisha / Akein | 🟡 | Single-seed CPU screening done. Needs 5 seeds on an AMD GPU |
 | Freeze `models/v1` | Akein | 🟡 | Recommended: `models/v0-ens3`; waiting for the team's decision |
 | Final test evaluation, once | Anisha / Akein | ❌ | |
 | Tier 2 (E9, E10, E11, E8, E4, E7) | Anisha / Akein | ❌ | Low priority |
-| Explainability check (spec 8.4) | Claude | ✅ | Box IoU≥0.3: 97/99/100% (Scratch/Loc/Edge-Loc, synthetic); `docs/results/v0_val/gradcam_examples.png` |
-| Teammate hand-off (`docs/HANDOFF.md`, split file, data access) | Claude | ✅ | |
+| Explainability check (spec 8.4) | Claude | ✅ | Box IoU≥0.3 on synthetic; `docs/results/v0_val/gradcam_examples.png` |
+| Teammate hand-off (`docs/HANDOFF.md`, split file, data access) | Claude | ✅ | Updated for Phase 5 |
 | Model card | Claude | 🟡 | Draft; test numbers pending the final run |
-| Accuracy improvements (ResNet-18, 60 epochs, bigger ensemble) | Claude | ✅ | None beat `models/v0-ens3` (0.912); recommended v1. See OVERNIGHT.md day 2 |
+| Accuracy improvements (ResNet-18, 60 epochs, bigger ensemble) | Claude | ✅ | None beat `models/v0-ens3` (0.912) |
+
+## Phase 3 — YOLO
+| Item | Owner | Status | Notes |
+|---|---|---|---|
+| YOLO train / weights / real `classifiers/yolo.py` adapter | TBD | ❌ | Stub raises “YOLO is not available yet”; no invented outputs |
+
+## Phase 4 — factory simulation (Nasser & Shefali Cat)
+| Item | Owner | Status | Notes |
+|---|---|---|---|
+| `wafer/factory/root_causes.json` (9 patterns) | Nasser / Shefali Cat | 🟡 | Center + Edge-Ring have sources (not read in full); others triage heuristic |
+| `build_stream` + `scripts/make_stream.py` | Nasser / Shefali Cat | ✅ | Val ETCH-04 Edge-Ring from LOT-010; `stream_val_unscored.csv` committed |
+| `check_alert`, `lots_caught_early`, `estimate_impact` | Nasser / Shefali Cat | ✅ | Observed vs assumed-full-lot exposure; no false savings claims |
+| `check_lot_history` + `score_stream` | Phase 5 | ✅ | Compact LLM payload; full events local; as_of-safe alerts |
+| Scored stream with CNN predictions | Team | 🟡 | Regenerate: `python -m wafer.agent --score-stream …` (needs `labeled.pkl`); not committed |
+| Rebuild stream from test split | Team | ❌ | Only after the final test evaluation |
+
+## Phase 5 — agent
+| Item | Owner | Status | Notes |
+|---|---|---|---|
+| `wafer/classifiers/` (CNN + YOLO stub) | Phase 5 | ✅ | Default CNN; YOLO unavailable error; no silent fallback |
+| AMD Token Factory client + tool loop | Phase 5 | ✅ | Tools: classify_wafer, lookup_root_cause, check_lot_history, estimate_impact |
+| CLI + callable `WaferAgent` | Phase 5 | ✅ | `python -m wafer.agent`; `--debug` for timings; answer-only by default |
+| Parallel tool calls + compact history | Phase 5 | ✅ | Status flow: 1× history then parallel root-cause + impact |
+| Tests (`test_classifiers`, `test_agent`, factory) | Phase 5 | ✅ | Mocked LLM; no live key required |
+| Docs (README, HANDOFF, STATUS, AMD_SETUP, `.env.example`) | Phase 5 | ✅ | How to run + works vs pending |
+
+## Phase 6–7 — pending
+| Item | Status | Notes |
+|---|---|---|
+| Streamlit dashboard | ❌ | Use `WaferAgent.from_env` / `wafer.classifiers` |
+| End-to-end demo polish | ❌ | stream → CNN → alert → agent → UI |

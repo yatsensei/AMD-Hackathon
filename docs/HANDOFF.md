@@ -1,64 +1,127 @@
-# Hand-off: using the data and the CNN from other phases
+# Hand-off: data, CNN, factory, and agent
 
-Phases 1–2 (data + CNN) are done. This page is for the YOLO, factory-simulation, agent and dashboard work: what you can use today, and the rules that keep our numbers honest.
+Phases **1–2** (data + CNN), **4** (factory simulation), and **5** (Token Factory agent) are implemented on branch `feature/wafer-agent`. This page is what you can use today, what is still pending, and the rules that keep our numbers honest.
 
-## 1. Setup (once, about 10 minutes, any laptop, no GPU)
+## What works vs pending
+
+| Area | Status |
+|---|---|
+| Dataset prep + lot-grouped split | Done (`prepare_data.py`, `splits/wafer_split_v1.csv.gz`) |
+| CNN classify / calibrate / abstain (`wafer.infer`) | Done (`models/v0`, `v0-ens3`, `v0-tta` in repo; CPU-trained) |
+| Factory stream, alerts, root causes, impact | Done (`wafer/factory/`, `streams/stream_val_unscored.csv` committed) |
+| **Phase 5 agent** (Token Factory + tools) | **Done** — CLI + `WaferAgent`; tools wrap CNN + factory |
+| Classifier registry (`wafer.classifiers`) | Done — CNN live; YOLO stub only |
+| Scored val stream in git | **Not committed** — regenerate locally with `--score-stream` |
+| YOLO real adapter / weights | **Pending** — selecting `yolo` errors clearly |
+| Streamlit dashboard (Phase 6) | **Pending** — call `WaferAgent.from_env` when ready |
+| Final test-set evaluation | **Pending** — do not use test split for the demo until then |
+| CNN retrain on AMD GPU | **Pending** — pitch must not claim AMD training |
+
+## 1. Setup (any laptop; GPU optional)
+
 ```bash
-git clone -b claude/great-ptolemy-wdot0b https://github.com/yatsensei/AMD-Hackathon && cd AMD-Hackathon
-pip install -r requirements.txt torch torchvision
-scripts/download_data.sh            # public Kaggle archive, no login needed (or set KAGGLE_API_TOKEN)
-python scripts/prepare_data.py      # ~7 min: builds data/processed/* and data/interim/labeled.pkl
+git clone -b feature/wafer-agent https://github.com/yatsensei/AMD-Hackathon && cd AMD-Hackathon
+pip install -r requirements.txt torch torchvision   # torch needed for CNN scoring / infer
+scripts/download_data.sh            # public Kaggle archive, or set KAGGLE_API_TOKEN
+python scripts/prepare_data.py      # ~7 min → data/interim/labeled.pkl (+ processed artifacts)
+cp .env.example .env                # fill AMD_* for the agent (never commit .env)
 ```
-If you only need the split (lot, wafer index, label, split), skip the download: `splits/wafer_split_v1.csv.gz` is in git.
 
-## 2. Classifier API (agent: Phase 5 · dashboard: Phase 6 · factory: Phase 4)
+Split-only (no maps): `splits/wafer_split_v1.csv.gz` is in git.
+
+## 2. Classifier API (agent · dashboard · factory)
+
 ```python
-from wafer.infer import classify, classify_batch, explain     # loads models/v1, else models/v0
-r = classify(wafer_map)            # wafer_map: 2D array, 0 = no die, 1 = pass, 2 = fail, any size
-# {"pattern": "Edge-Ring", "confidence": 0.94, "probs": {...9 classes...},
-#  "top2": [["Edge-Ring", 0.94], ["Donut", 0.03]], "defect_prob": 0.97,
-#  "needs_review": False, "review_reasons": [], "model_version": "v0"}
-e = explain(wafer_map)             # {"heatmap": HxW float32 in [0,1], "bbox": [x0,y0,x1,y1] | None, "pattern": ...}
+from wafer.infer import classify, classify_batch, explain     # $WAFER_MODEL_DIR, else models/v1, else models/v0
+r = classify(wafer_map)            # 0 = no die, 1 = pass, 2 = fail
+# pattern, confidence, probs, top2, defect_prob, needs_review, review_reasons, model_version
 ```
-- **About 4–10 ms per wafer on a laptop CPU** (`models/v0` single CNN: 4 ms; `models/v0-ens3`: 9.5 ms). Pick a model with `WAFER_MODEL_DIR=models/v0-ens3`.
-- Plain Python types, so `json.dumps(r)` works for agent tool outputs.
-- Invalid input (wrong values, empty map) raises `ValueError` with a clear message.
-- `wafer/infer_mock.py` has the same functions and keys if you need a stand-in.
 
-**Agent (Phase 5):**
-- When `needs_review` is True, **say the model is unsure** and use `review_reasons`:
-  - `low_confidence`: below the calibrated threshold;
-  - `confusable_pair`: e.g. Edge-Loc vs Scratch with a small margin;
-  - `possible_defect`: "none" was most likely, but the defect-recall safety rule flagged it.
-- Never turn a 0.4 confidence into "likely".
-- `confidence` is calibrated: 0.9 means right about 90% of the time on validation.
+Prefer the pluggable backend (Phase 5 / future YOLO):
 
-**Dashboard (Phase 6):**
-- `from wafer.viz import render_wafer, render_heatmap`, so wafers look the same everywhere.
-- `render_heatmap(map, e["heatmap"], e["bbox"])` gives the overlay with the box.
-- Examples: `docs/results/v0_val/gradcam_examples.png`.
-
-The box marks the fail-die cluster that drove the decision. Call it an *explanation/attribution*, not *detection*: there were no box labels to train on.
-
-## 3. Wafers for the factory stream (Phase 4)
 ```python
-from wafer.data.access import wafers_for_stream, get_wafer_map
-df = wafers_for_stream("val")      # uid, lotName, waferIndex, label, ... ordered by lot and wafer
-m = get_wafer_map(df.uid[0])       # the raw map to send through classify()
+from wafer.classifiers import get_classifier
+clf = get_classifier()                 # cnn by default ($WAFER_CLASSIFIER)
+r = clf.classify(wafer_map)            # also sets classifier="cnn"
+# get_classifier("yolo") → ClassifierNotAvailableError ("YOLO is not available yet")
 ```
-- **Stream `val` wafers while building the demo. Switch to `"test"` only after the single final test evaluation has run.** Otherwise we'd be looking at test predictions before the final score. Training wafers are refused: the model has seen them.
-- Group them into fictional lots and tools however the story needs. Keep `uid` so every streamed wafer traces back to the dataset.
-- `label` is the true pattern. Use it to inject a "drifting tool" (e.g. pick Edge-Ring wafers for Tool B), but the alert logic must react to the **model's** `classify()` output, not the label.
 
-## 4. YOLO benchmark (Phase 3)
-- PNG folders: `python scripts/prepare_data.py --yolo` writes `yolo_data/{train,val,test}/<class>/<uid>.png`. Defaults to the area-fraction rendering; add `--yolo-encoding nearest` for the plain 0/1/2 colours.
-- To be scored on exactly the same split and metrics as the CNN, write a CSV `uid,prob_Center,prob_Donut,...,prob_none` for **all val and test** wafers, then:
-  ```bash
-  python -m wafer.evaluate --predictions path/to/yolo_preds.csv          # validation score
-  ```
-- The test score comes only from the single final run, where YOLO is a pre-registered comparator.
+- ~4–10 ms/wafer on CPU (`models/v0` ~4 ms; `models/v0-ens3` ~9.5 ms).
+- CNN calibration / `needs_review` rules apply to CNN only — do not reuse τ/θ for YOLO later.
+- When `needs_review` is True, say the model is unsure and cite `review_reasons`. Never call 0.4 “likely”.
 
-## 5. Numbers you may quote (and how)
-- **Validation results:** `docs/results/OVERNIGHT.md` and `docs/results/v0_val/`. They're **validation** numbers, slightly optimistic.
-- **Pitch numbers** must come from `docs/results/final/` once the final test run happens (not yet).
-- **Our CNN was trained on CPU** (no GPU credits), so don't say it was trained on AMD. The AMD part of the product is the agent's LLM on Token Factory.
+**Dashboard (Phase 6):** `from wafer.viz import render_wafer, render_heatmap`. Grad-CAM box = attribution, not detection.
+
+## 3. Factory stream (Phase 4)
+
+```bash
+python scripts/make_stream.py                 # val + CNN → streams/stream_val.csv (+ alerts)
+python scripts/make_stream.py --no-predict    # → streams/stream_val_unscored.csv (committed)
+```
+
+```python
+from wafer.factory import (
+    build_stream, add_predictions, score_stream, check_alert, check_lot_history,
+    lots_caught_early, lookup_root_cause, estimate_impact, impact_from_alert,
+)
+```
+
+- Use **val** while building; switch to **test** only after the final test evaluation.
+- Alert logic reads model `pattern`, never true `label`.
+- Scenario: 20×25 wafers; from LOT-010, ETCH-04 Edge-Ring excursion.
+
+## 3b. Agent (Phase 5) — how to run
+
+**Dependencies:** `openai`, `python-dotenv` (in `requirements.txt`). CNN scoring also needs `torch`.
+
+**Env** (copy `.env.example` → `.env`; never commit secrets):
+
+| Variable | Purpose |
+|---|---|
+| `AMD_API_KEY` | Token Factory key (`rc-…`). Optional alias: `RADEON_API_KEY` |
+| `AMD_BASE_URL` | e.g. `https://developer.amd.com.cn/radeon/api/v1` |
+| `AMD_MODEL` | Id from `GET $AMD_BASE_URL/models` — catalog changes; do not hard-code |
+| `WAFER_CLASSIFIER` | `cnn` (default). `yolo` → clear unavailable error |
+| `WAFER_MODEL_DIR` | Optional CNN export (else `models/v1`, then `models/v0`) |
+
+```bash
+# Score unscored stream (needs labeled.pkl + a CNN export)
+python -m wafer.agent --score-stream streams/stream_val_unscored.csv -o streams/stream_val.csv
+
+# Ask — stdout is the answer; errors/evidence warnings on stderr; timings only with --debug
+python -m wafer.agent -q "What is happening on ETCH-04, and what exposure has been observed?" \
+  --stream streams/stream_val.csv --as-of "2026-10-13 04:10"
+
+python -m wafer.agent --help          # full CLI
+python -m wafer.agent -q "..." --stream streams/stream_val.csv --debug   # timings + footer
+```
+
+```python
+from wafer.agent import WaferAgent
+import pandas as pd
+df = pd.read_csv("streams/stream_val.csv")
+agent = WaferAgent.from_env(df, as_of="2026-10-13 04:10")
+print(agent.ask("Summarise the excursion and observed exposure.")["answer"])
+```
+
+**Tools:** `classify_wafer`, `lookup_root_cause`, `check_lot_history`, `estimate_impact`.
+
+**Evidence rules (implemented):**
+- History is compact for the LLM (counts, lot summaries, alerts, review candidates, event sample); full events stay local on the session.
+- Alerts use full history ≤ `as_of` before sampling; lot filters do not hide tool-wide alerts. No predictions → alerts unavailable (never use labels as predictions).
+- Empty alerts ≠ “no exposure / no action” — only that the rule has not fired on available predictions.
+- Impact: **subsequent lots observed** since the alert; `observed_wafers` vs `assumed_full_lot_*`; never claim unobserved wafers were processed; never claim savings unless `intervention_recorded`.
+- Root causes: possibilities + `source` + `source_warnings`.
+- Scored rows record `classifier` + `model_version`.
+
+**AMD story:** CNN trained on **CPU**. Live AMD piece = agent LLM on Token Factory.
+
+## 4. YOLO benchmark (Phase 3) — pending adapter
+
+- PNGs: `python scripts/prepare_data.py --yolo` → `yolo_data/...`
+- Score like the CNN: predictions CSV → `python -m wafer.evaluate --predictions ...`
+- Agent/dashboard integration: implement `wafer/classifiers/yolo.py` for real (replace the stub). Do not invent boxes/outputs beforehand.
+
+## 5. Numbers you may quote
+- **Validation:** `docs/results/OVERNIGHT.md`, `docs/results/v0_val/` (slightly optimistic).
+- **Pitch / test numbers:** only from `docs/results/final/` after `--final` (not yet).
