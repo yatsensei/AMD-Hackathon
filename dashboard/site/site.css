@@ -58,7 +58,7 @@ svg { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; 
 .link-arrow:hover svg { transform: translateX(3px); }
 
 /* ---------- nav ---------- */
-.nav { position: sticky; top: 0; z-index: 50; background: var(--black); border-bottom: 1px solid transparent; transition: border-color .2s; }
+.nav { position: sticky; top: 0; z-index: 50; isolation: isolate; background: var(--black); border-bottom: 1px solid transparent; transition: border-color .2s; }
 .nav.scrolled { border-bottom-color: var(--line-dark); }
 .nav-inner { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; gap: 32px; }
 .logo { display: inline-flex; align-items: center; gap: 10px; color: var(--on-dark); text-decoration: none; font-weight: 650; font-size: 16px; letter-spacing: -0.01em; }
@@ -141,10 +141,10 @@ svg { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; 
 .vg-title { margin-top: 16px; font-size: 21px; color: var(--on-dark); }
 .vg-sub { color: var(--on-dark-2); font-size: 13.5px; margin-top: 2px; }
 .vg-wafers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 18px; }
-.vg-wafers figure { margin: 0; background: var(--black); border: 1px solid var(--line-dark); border-radius: 9px; padding: 12px 12px 8px; opacity: 0; transform: translateY(8px); transition: opacity .5s, transform .5s; }
-.vignette.in .vg-wafers figure { opacity: 1; transform: none; }
-.vignette.in .vg-wafers figure:nth-child(2) { transition-delay: .25s; }
-.vignette.in .vg-wafers figure:nth-child(3) { transition-delay: .5s; }
+.vg-wafers figure { margin: 0; background: var(--black); border: 1px solid var(--line-dark); border-radius: 9px; padding: 12px 12px 8px; transition: opacity .6s var(--ease-out), transform .6s var(--ease-out); }
+.motion .vignette:not(.in) .vg-wafers figure { opacity: 0; transform: translateY(8px); }
+.vignette .vg-wafers figure:nth-child(2) { transition-delay: .25s; }
+.vignette .vg-wafers figure:nth-child(3) { transition-delay: .5s; }
 .vg-wafers img { width: 100%; aspect-ratio: 1; object-fit: contain; image-rendering: pixelated; }
 .vg-wafers figcaption { font-family: var(--mono); font-size: 11px; color: var(--on-dark-3); text-align: center; margin-top: 6px; }
 .vg-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
@@ -220,11 +220,56 @@ svg { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; 
 .foot .logo { font-size: 14px; }
 
 /* reveal */
-.reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
-.reveal.in { opacity: 1; transform: none; }
+/* ---------- motion ----------
+   Everything is visible without JS. With JS (html.motion), elements below the fold start
+   slightly lowered and transparent, then settle once when scrolled into view. */
+:root { --ease-out: cubic-bezier(.16, 1, .3, 1); }
+.motion .reveal:not(.in) { opacity: 0; transform: translateY(18px); }
+.motion .reveal { transition: opacity .8s var(--ease-out), transform .8s var(--ease-out); }
+.motion .stagger:not(.in) > * { opacity: 0; transform: translateY(16px); }
+.motion .stagger > * { transition: opacity .7s var(--ease-out), transform .7s var(--ease-out); transition-delay: calc(var(--i, 0) * 80ms); }
+.motion .vis-gallery.stagger > * { transition-delay: calc(var(--i, 0) * 55ms + 120ms); }
+.motion .vis-log.stagger > * { transition-delay: calc(var(--i, 0) * 260ms + 200ms); }
+
+/* hero intro on load */
+.motion .intro > * { animation: rise .9s var(--ease-out) both; }
+.motion .intro > :nth-child(2) { animation-delay: .08s; }
+.motion .intro > :nth-child(3) { animation-delay: .16s; }
+.motion .intro > :nth-child(4) { animation-delay: .24s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* background field (canvas): replaces the static dot grid when running */
+.field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1.2s ease; }
+.field.on { opacity: 1; }
+.field.on ~ .hero-grid, .has-field > .hero-grid { display: none; }
+
+/* product shot settles flat as it scrolls in */
+.product-shot { transform-origin: 50% 0; transform: perspective(1600px) rotateX(var(--tilt, 0deg)) scale(var(--scale, 1)); will-change: transform; }
+
+/* scroll progress */
+.progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--red); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); pointer-events: none; }
+
+/* model attention lights up over the plain map */
+.attn-stack { position: relative; }
+.attn-stack img + img { position: absolute; inset: 0; }
+.motion .attn .attn-on { opacity: 0; transition: opacity 1.4s ease .6s; }
+.motion .step.lit .attn .attn-on, .motion .vis-pair.in .attn-on { opacity: 1; }
+
+/* alert preview: badge pings once when it arrives */
+.vignette.in .vg-badge { animation: ping 1.6s ease-out .9s 1; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(226,35,45,.55); } 100% { box-shadow: 0 0 0 12px rgba(226,35,45,0); } }
+
+/* quiet hover lift on cards */
+.who-card, .step-visual, .vignette, .bars { transition: transform .35s var(--ease-out), box-shadow .35s var(--ease-out), border-color .2s; }
+.who-card:hover, .bars:hover { transform: translateY(-3px); }
+.step:hover .step-visual { transform: translateY(-3px); }
+
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .vg-wafers figure { opacity: 1; transform: none; transition: none; }
-  .dot-live { animation: none; }
+  .motion .reveal, .motion .stagger > *, .motion .intro > * { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
+  .motion .attn .attn-on { opacity: 1; transition: none; }
+  .product-shot { transform: none; }
+  .vignette.in .vg-badge, .dot-live { animation: none; }
+  .who-card:hover, .bars:hover, .step:hover .step-visual { transform: none; }
   html { scroll-behavior: auto; }
 }
 
