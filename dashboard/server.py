@@ -93,12 +93,26 @@ _agent = None
 _agent_error: str | None = None
 
 
+def stream_classifier_name() -> str:
+    """Backend that scored the loaded stream — agent history must match this."""
+    df = stream()
+    if "classifier" in df.columns and len(df):
+        return str(df["classifier"].iloc[0])
+    return (os.environ.get("WAFER_CLASSIFIER") or "cnn").strip().lower()
+
+
 def agent():
     global _agent, _agent_error
     if _agent is None and _agent_error is None:
         try:
             from wafer.agent import WaferAgent
-            _agent = WaferAgent.from_env(stream(), as_of=str(stream()["timestamp"].iloc[0]), verify_model=False)
+            from wafer.classifiers import get_classifier
+            # Bind the agent to the stream's classifier so lot history / alerts match predictions.
+            backend = get_classifier(stream_classifier_name())
+            _agent = WaferAgent.from_env(
+                stream(), as_of=str(stream()["timestamp"].iloc[0]),
+                classifier=backend, verify_model=False,
+            )
         except Exception as e:
             _agent_error = str(e).split(". Copy")[0]
     return _agent, _agent_error
@@ -114,7 +128,8 @@ def _wafer_row(r) -> dict:
             "timestamp": _iso(r.timestamp), "pattern": r.pattern, "confidence": float(r.confidence),
             "defect_prob": float(r.defect_prob), "needs_review": bool(r.needs_review),
             "review_reasons": [x for x in str(r.review_reasons).split(";") if x],
-            "label": r.label, "model_version": r.model_version}
+            "label": r.label, "model_version": r.model_version,
+            "classifier": getattr(r, "classifier", None)}
 
 
 def _decision_for(alert: dict) -> dict | None:
@@ -128,17 +143,47 @@ def _decision_for(alert: dict) -> dict | None:
 @app.get("/api/meta")
 def meta():
     df = stream()
-    _, yolo_err = yolo()
+    y_backend, yolo_err = yolo()
     ag, ag_err = agent()
+    stream_clf = stream_classifier_name()
+    yolo_meta = {
+        "available": y_backend is not None,
+        "reason": yolo_err,
+        "experimental": True,
+        "calibrated": False,
+        "review_rules_validated": False,
+        "model_version": "yolo-cls-exp",
+        "disclosure": (
+            "Experimental YOLO-cls; uncalibrated softmax; trained on a private stratified "
+            "sample (not wafer_split_v1). Overlaps the val demo stream — not a fair "
+            "comparison or held-out confirmation of the CNN."
+        ),
+    }
+    stream_ver = str(df["model_version"].iloc[0]) if len(df) else ""
+    line_calibrated = stream_clf == "cnn"
     return {
         "stream": STREAM_CSV.name, "n_wafers": len(df), "n_lots": int(df["lot_id"].nunique()),
         "tools": sorted(df["tool_id"].unique().tolist()),
         "timestamps": [_iso(t) for t in df["timestamp"].drop_duplicates()],
         "classes": CLASSES,
-        "model": {"dir": MODEL_DIR.name,
-                  "stream_scored_by": f"{df['classifier'].iloc[0]} {df['model_version'].iloc[0]}"},
-        "yolo": {"available": yolo_err is None, "reason": yolo_err},
-        "agent": {"available": ag is not None, "reason": ag_err},
+        "model": {
+            "dir": MODEL_DIR.name,  # CNN weights dir (inspector / optional opinion)
+            "stream_scored_by": f"{stream_clf} {stream_ver}".strip(),
+            "stream_classifier": stream_clf,
+            "stream_model_version": stream_ver,
+            # Line model = predictions on the loaded stream (feed + alert rule).
+            "line": {
+                "classifier": stream_clf,
+                "model_version": stream_ver,
+                "drives_alerts": True,
+                "calibrated": line_calibrated,
+                "review_rules_validated": line_calibrated,
+                "label": f"{stream_clf} {stream_ver}".strip(),
+            },
+        },
+        "yolo": yolo_meta,
+        "agent": {"available": ag is not None, "reason": ag_err,
+                  "classifier": stream_clf if ag is not None else None},
         "wafer_value_usd": WAFER_VALUE, "wafers_per_lot": WAFERS_PER_LOT,
     }
 
@@ -186,19 +231,38 @@ def state(as_of: str):
 @app.get("/api/wafer/{uid}")
 def wafer(uid: int):
     m = wafer_map(uid)
-    c = cnn().classify(m)
     row = stream()[stream()["uid"] == uid]
+    ctx = _wafer_row(next(row.itertuples())) if len(row) else None
+    stream_clf = stream_classifier_name()
+    c = cnn().classify(m)
     y_backend, y_err = yolo()
-    y_res, agree = None, None
+    y_res = None
     if y_backend is not None:
         try:
             y_res = y_backend.classify(m)
-            agree = y_res["pattern"] == c["pattern"]
         except Exception as e:
             y_err = str(e)
+    # Predictions already on the stream drive the feed and alert rule.
+    line = None
+    if ctx and ctx.get("pattern") is not None:
+        line = {
+            "pattern": ctx["pattern"], "confidence": ctx["confidence"],
+            "needs_review": ctx["needs_review"], "review_reasons": ctx["review_reasons"],
+            "model_version": ctx["model_version"], "classifier": ctx.get("classifier") or stream_clf,
+            "calibrated": stream_clf == "cnn",
+            "review_rules_validated": stream_clf == "cnn",
+            "drives_alerts": True,
+        }
+    line_pattern = line["pattern"] if line else None
+    agree_cnn = (line_pattern == c["pattern"]) if line_pattern is not None else None
+    agree_yolo = (line_pattern == y_res["pattern"]) if (line_pattern is not None and y_res) else None
     return {"uid": uid, "shape": list(m.shape), "dies": int((m > 0).sum()), "fails": int((m == 2).sum()),
-            "cnn": c, "yolo": y_res, "yolo_reason": y_err, "agree": agree,
-            "context": _wafer_row(next(row.itertuples())) if len(row) else None}
+            "line": line, "stream_classifier": stream_clf,
+            "cnn": c, "yolo": y_res, "yolo_reason": y_err,
+            "agree_cnn": agree_cnn, "agree_yolo": agree_yolo,
+            # Back-compat: agree = line vs live YOLO when stream is CNN, else line vs CNN.
+            "agree": agree_yolo if stream_clf == "cnn" else agree_cnn,
+            "context": ctx}
 
 
 @app.get("/api/wafer/{uid}/image.png")
@@ -248,11 +312,12 @@ class Question(BaseModel):
 def ask(q: Question):
     ag, err = agent()
     if ag is None:
-        return JSONResponse({"answer": None, "error": f"Agent not configured: {err}"}, status_code=503)
+        return JSONResponse({"answer": None, "error": f"Agent not configured: {err}",
+                             "as_of": q.as_of}, status_code=503)
     with _lock:
         ag.set_as_of(q.as_of)
         out = ag.ask(q.question)
-    return {"answer": out.get("answer"), "error": out.get("error"),
+    return {"answer": out.get("answer"), "error": out.get("error"), "as_of": q.as_of,
             "tools": [t.get("tool") for t in (out.get("timings") or {}).get("tools", [])]}
 
 

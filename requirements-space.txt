@@ -16,3 +16,5 @@ fastapi>=0.110
 uvicorn>=0.29
 pydantic>=2
 httpx>=0.27
+# Experimental YOLO-cls backend (optional at runtime; adapter raises if import/weights fail)
+ultralytics>=8.3,<9

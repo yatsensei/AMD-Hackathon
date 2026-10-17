@@ -1,0 +1,24 @@
+# Experimental YOLO-cls second opinion (not the primary CNN).
+version: yolo-cls-exp
+task: classify
+architecture: yolo26n-cls
+imgsz: 128
+encoding: nearest_bgr_render
+# Exact BGR colours used at train/infer time (OpenCV order): no-die / pass / fail
+colors_bgr:
+  0: [0, 0, 0]
+  1: [90, 140, 60]
+  2: [40, 220, 255]
+weights: best.pt
+calibrated: false
+review_rules_validated: false
+experimental: true
+# Training used a private stratified sample of WM-811K, NOT splits/wafer_split_v1.csv.gz.
+# Do not claim fair comparison, held-out performance, or independent confirmation vs the CNN.
+training_split: private_stratified_70_15_15_seed0
+shared_split_file: splits/wafer_split_v1.csv.gz
+shared_split_used: false
+overlap_with_demo_stream: likely  # many lots appear in both train and our val demo stream
+notes: >
+  Confidence is raw softmax from Ultralytics classify. CNN temperature / τ / θ are
+  never applied. needs_review is always false — no validated YOLO review policy.

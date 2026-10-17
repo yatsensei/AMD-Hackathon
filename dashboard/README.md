@@ -21,10 +21,15 @@ everything else runs offline.
 
 | View | What it shows | Source |
 |---|---|---|
-| Operations | KPIs, per-tool defect bars, inspection feed, alerts with likely cause, exposure and engineer actions (hold, ticket, dismiss) | `wafer.factory` (alert rule, root causes, impact) |
-| Wafer inspector | Map, model attention with the defect box, calibrated probabilities, CNN vs YOLO opinion | `wafer.infer`, `wafer.explain`, `wafer.classifiers` |
-| Copilot | Questions answered from line data up to the current line time | `wafer.agent.WaferAgent` (AMD Token Factory) |
-| Model quality | Validation metrics, per-class table, every report chart | `docs/results/<model>_val/metrics.json`, `docs/results/report/` |
+| Operations | KPIs, per-tool defect bars, inspection feed, alerts with likely cause, exposure and engineer actions (hold, ticket, dismiss). Status bar shows **line model** (drives feed/alerts) vs optional **second opinion**. | `wafer.factory` (alert rule, root causes, impact) |
+| Wafer inspector | Map; line prediction from the scored stream; optional live CNN / YOLO opinions (not the alert source). Attention heatmap is CNN-only. | `wafer.infer`, `wafer.explain`, `wafer.classifiers` |
+| Copilot | Questions answered from line data up to the submitted `as_of` (shown on each answer) | `wafer.agent.WaferAgent` (AMD Token Factory) |
+| Model quality | Validation metrics, per-class table, every report chart (CNN metrics) | `docs/results/<model>_val/metrics.json`, `docs/results/report/` |
+
+Experimental YOLO-cls (`models/yolo-cls-exp`): uncalibrated; no validated automatic-acceptance /
+review policy; private training split overlaps the val demo — not a fair CNN comparison.
+Separate stream: `STREAM_CSV=streams/stream_val_yolo.csv` (agent history follows the stream's
+`classifier` column).
 
 ## Configuration
 

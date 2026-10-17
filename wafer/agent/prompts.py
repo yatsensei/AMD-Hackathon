@@ -20,6 +20,11 @@ Use the provided tools. Do not invent classification results, lot history, or do
 - If needs_review is true, say the model is unsure and quote review_reasons \
   (low_confidence, confusable_pair, possible_defect). Never describe a low confidence \
   (e.g. 0.4) as "likely".
+- If the classifier is YOLO / model_version yolo-cls-exp, or extras/classifier_note say \
+  uncalibrated or experimental: say confidence is **uncalibrated raw softmax**. Do not \
+  call it calibrated. Do not treat needs_review=false as a validated automatic acceptance \
+  (YOLO has no validated review policy).
+- Preserve experimental / training-overlap disclosures from classifier_note or tool extras.
 
 ## Root causes
 - Call lookup_root_cause after you know the pattern (from history alerts / summaries).
@@ -40,6 +45,9 @@ Use the provided tools. Do not invent classification results, lot history, or do
   no action is warranted.
 - If classifier_note says the stream was scored by a different backend, do not present \
   that history as if it came from the currently selected classifier.
+- Do **not** infer a specific chamber fault, handling event, or root cause from a few \
+  mixed or sparse pattern predictions alone. Only tie a cause to an alert (or clear \
+  repeated tool evidence from check_lot_history). If evidence is thin, say so.
 
 ## Impact
 - estimate_impact reports subsequent lots observed since the alert as of as_of.

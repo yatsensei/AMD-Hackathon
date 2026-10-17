@@ -10,10 +10,10 @@ Phases **1–2** (data + CNN), **4** (factory simulation), and **5** (Token Fact
 | CNN classify / calibrate / abstain (`wafer.infer`) | Done (`models/v0`, `v0-ens3`, `v0-tta` in repo; CPU-trained) |
 | Factory stream, alerts, root causes, impact | Done (`wafer/factory/`, `streams/stream_val_unscored.csv` committed) |
 | **Phase 5 agent** (Token Factory + tools) | **Done** — CLI + `WaferAgent`; tools wrap CNN + factory |
-| Classifier registry (`wafer.classifiers`) | Done — CNN live; YOLO stub only |
-| Scored val stream in git | **Not committed** — regenerate locally with `--score-stream` |
-| YOLO real adapter / weights | **Pending** — selecting `yolo` errors clearly |
-| Streamlit dashboard (Phase 6) | **Pending** — call `WaferAgent.from_env` when ready |
+| Classifier registry (`wafer.classifiers`) | Done — CNN default; **experimental YOLO-cls** optional |
+| Scored val streams in git | CNN: `stream_val.csv` / `stream_val_ens3.csv`; YOLO: `stream_val_yolo.csv` |
+| YOLO real adapter / weights | **Experimental** — `models/yolo-cls-exp` + `wafer/classifiers/yolo.py` (uncalibrated; private split) |
+| Dashboard (Phase 6) | Done — agent binds to the stream's `classifier` column |
 | Final test-set evaluation | **Pending** — do not use test split for the demo until then |
 | CNN retrain on AMD GPU | **Pending** — pitch must not claim AMD training |
 
@@ -43,11 +43,15 @@ Prefer the pluggable backend (Phase 5 / future YOLO):
 from wafer.classifiers import get_classifier
 clf = get_classifier()                 # cnn by default ($WAFER_CLASSIFIER)
 r = clf.classify(wafer_map)            # also sets classifier="cnn"
-# get_classifier("yolo") → ClassifierNotAvailableError ("YOLO is not available yet")
+# Experimental YOLO-cls (pip install ultralytics; models/yolo-cls-exp/best.pt):
+# clf = get_classifier("yolo")         # uncalibrated; needs_review always False
+# Missing ultralytics/weights → ClassifierNotAvailableError (never silent CNN fallback)
 ```
 
 - ~4–10 ms/wafer on CPU (`models/v0` ~4 ms; `models/v0-ens3` ~9.5 ms).
-- CNN calibration / `needs_review` rules apply to CNN only — do not reuse τ/θ for YOLO later.
+- CNN calibration / `needs_review` rules apply to CNN only — **never** reuse τ/θ for YOLO.
+- YOLO confidence is raw softmax. It was **not** trained on `wafer_split_v1` and overlaps the val demo stream — do not claim fair comparison. See `models/yolo-cls-exp/README.md`.
+- YOLO demo stream: `python -m wafer.agent --score-stream streams/stream_val_unscored.csv --classifier yolo -o streams/stream_val_yolo.csv`
 - When `needs_review` is True, say the model is unsure and cite `review_reasons`. Never call 0.4 “likely”.
 
 **Dashboard (Phase 6):** `from wafer.viz import render_wafer, render_heatmap`. Grad-CAM box = attribution, not detection.

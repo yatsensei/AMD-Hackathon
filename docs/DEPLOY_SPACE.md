@@ -13,14 +13,23 @@ until the team is ready — secrets stay in the host / Space settings, never in 
 | Asset | Path |
 |---|---|
 | FastAPI + static UI | `dashboard/` |
-| CNN ensemble (recommended) | `models/v0-ens3/` |
-| Scored validation stream | `streams/stream_val_ens3.csv` |
+| CNN ensemble (recommended / default) | `models/v0-ens3/` |
+| Experimental YOLO-cls | `models/yolo-cls-exp/` (+ `ultralytics` in the image) |
+| Scored validation streams | `streams/stream_val_ens3.csv` (CNN), `streams/stream_val_yolo.csv` (YOLO) |
 | Stream wafer maps | `dashboard/data/stream_maps.npz` |
 | Model-quality charts / metrics | `docs/results/report/`, `docs/results/v0-ens3_val/` |
 | Factory root causes | `wafer/factory/root_causes.json` |
 
-Excluded: `.env`, `.venv`, `/data`, other model dirs (`v0`, `v0-tta`), test stream,
-training scripts, and pytest.
+Excluded: `.env`, `.venv`, `/data`, other model dirs (`v0`, `v0-tta`), YOLO training
+PNG dumps, test stream, training scripts, and pytest.
+
+Default Space runtime stays on the **CNN** stream. To demo experimental YOLO:
+
+```bash
+docker run ... -e STREAM_CSV=/app/streams/stream_val_yolo.csv -e WAFER_CLASSIFIER=yolo ...
+```
+
+(The dashboard agent follows the stream's `classifier` column either way.)
 
 ## Required hosting environment variables
 
@@ -37,9 +46,10 @@ Optional overrides (image defaults are already set for the demo):
 
 | Variable | Default in image |
 |---|---|
-| `STREAM_CSV` | `/app/streams/stream_val_ens3.csv` |
+| `STREAM_CSV` | `/app/streams/stream_val_ens3.csv` (use `stream_val_yolo.csv` for YOLO demo) |
 | `WAFER_MODEL_DIR` | `/app/models/v0-ens3` |
-| `WAFER_CLASSIFIER` | `cnn` |
+| `WAFER_CLASSIFIER` | `cnn` (set `yolo` only with the YOLO stream) |
+| `WAFER_YOLO_DIR` | `/app/models/yolo-cls-exp` (optional override) |
 
 Without `AMD_*`, Operations / wafer inspector / model quality still work; the Copilot
 tab shows offline.
@@ -78,11 +88,13 @@ curl -s "http://127.0.0.1:7860/api/state?as_of=2026-10-13T21:12:00" | python -c 
 
 | Item | Status |
 |---|---|
-| YOLO second opinion | Stub only — UI shows “not connected” |
+| YOLO second opinion | Experimental YOLO-cls bundled; not a fair CNN comparator (private split) |
 | Final test-set evaluation | Not run; Space must keep using **val** stream |
 | HF Space creation / paid hardware | Not performed in this prep |
 | AMD Token Factory network reachability from HF | Confirm after first deploy (egress to `AMD_BASE_URL`) |
 | Docker Desktop / daemon | Required for local `docker build`; if stopped, start it before smoking the image |
+| Experimental YOLO-cls | Bundled (`models/yolo-cls-exp` + `ultralytics`); requires matching CPU `torch`/`torchvision`. Not a fair CNN comparator (private training split). |
+| Render Free 512 MB | Unlikely for Torch stack (see prior RAM inspection) |
 
 ## Repo files added for Space packaging
 

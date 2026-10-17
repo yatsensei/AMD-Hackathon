@@ -28,18 +28,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --chown=user requirements-space.txt /app/requirements-space.txt
+# Torch + torchvision from the same CPU index (ultralytics needs matching torchvision ops).
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cpu \
         --extra-index-url https://pypi.org/simple \
-        "torch>=2.2,<3" \
+        "torch>=2.2,<3" "torchvision>=0.17,<1" \
  && pip install --no-cache-dir -r /app/requirements-space.txt
 
 # App code + demo assets only (see .dockerignore)
 COPY --chown=user wafer /app/wafer
 COPY --chown=user dashboard /app/dashboard
 COPY --chown=user models/v0-ens3 /app/models/v0-ens3
+COPY --chown=user models/yolo-cls-exp /app/models/yolo-cls-exp
 COPY --chown=user streams/stream_val_ens3.csv /app/streams/stream_val_ens3.csv
+COPY --chown=user streams/stream_val_yolo.csv /app/streams/stream_val_yolo.csv
 COPY --chown=user docs/results/report /app/docs/results/report
 COPY --chown=user docs/results/v0-ens3_val /app/docs/results/v0-ens3_val
 COPY --chown=user pyproject.toml /app/pyproject.toml

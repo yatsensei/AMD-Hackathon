@@ -69,7 +69,7 @@ agent = WaferAgent.from_env(pd.read_csv("streams/stream_val.csv"), as_of="2026-1
 print(agent.ask("What exposure has been observed?")["answer"])
 ```
 
-Classifier backends: `from wafer.classifiers import get_classifier` — **cnn** default; **yolo** raises “not available yet” (no silent CNN fallback). Details: [`docs/HANDOFF.md`](docs/HANDOFF.md) §3b.
+Classifier backends: `from wafer.classifiers import get_classifier` — **cnn** default; **yolo** is an **experimental** Ultralytics classify adapter (`models/yolo-cls-exp`, uncalibrated; no silent CNN fallback). YOLO was **not** trained on `splits/wafer_split_v1.csv.gz` and overlaps the val demo stream — do not claim fair comparison. Separate demo stream: `streams/stream_val_yolo.csv`. Details: [`docs/HANDOFF.md`](docs/HANDOFF.md) §3b and [`models/yolo-cls-exp/README.md`](models/yolo-cls-exp/README.md).
 
 ## On an AMD GPU (optional — CNN was trained on CPU)
 

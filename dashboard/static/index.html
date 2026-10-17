@@ -106,9 +106,9 @@
         <div class="card agent-side">
           <div class="card-head"><h2>How it answers</h2></div>
           <ol class="steps">
-            <li><b>Classifier</b> names each wafer's defect pattern with calibrated confidence and flags uncertain wafers.</li>
-            <li><b>Alert rule</b> fires when one tool produces the same pattern repeatedly.</li>
-            <li><b>Copilot</b> (LLM on AMD Token Factory) explains the likely cause, lots at risk and cost, citing its sources.</li>
+            <li id="steps-classifier"><b>Line model</b> names each wafer's defect pattern; confidence and review rules depend on whether the stream was scored by CNN or experimental YOLO.</li>
+            <li><b>Alert rule</b> fires when one tool produces the same pattern repeatedly (line-model predictions only).</li>
+            <li><b>Copilot</b> (LLM on AMD Token Factory) explains the likely cause, lots at risk and cost, citing its sources — answers are tied to the line time when you asked.</li>
             <li><b>Engineer</b> decides: hold lots, open a ticket or dismiss.</li>
           </ol>
           <p class="fine">Root causes are triage possibilities from published sources, not diagnoses. Cost uses an adjustable wafer value.</p>

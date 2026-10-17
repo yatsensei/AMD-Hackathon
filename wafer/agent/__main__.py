@@ -45,7 +45,8 @@ def main(argv=None) -> int:
     p.add_argument("--stream", default=str(REPO_ROOT / "streams" / "stream_val_unscored.csv"),
                    help="CSV path for the factory stream")
     p.add_argument("--as-of", default=None, help="Replay clock (default: last timestamp in stream)")
-    p.add_argument("--classifier", default=None, help="cnn (default) or yolo (not available yet)")
+    p.add_argument("--classifier", default=None,
+                   help="cnn (default) or yolo (experimental YOLO-cls; uncalibrated)")
     p.add_argument("--score-stream", metavar="PATH",
                    help="Score an unscored stream with the CNN and write CSV; then exit")
     p.add_argument("-o", "--out", default=None, help="Output path for --score-stream")

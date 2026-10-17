@@ -37,10 +37,12 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Ph
 | Model card | Claude | 🟡 | Draft; test numbers pending the final run |
 | Accuracy improvements (ResNet-18, 60 epochs, bigger ensemble) | Claude | ✅ | None beat `models/v0-ens3` (0.912) |
 
-## Phase 3 — YOLO
+## Phase 3 — YOLO (experimental)
 | Item | Owner | Status | Notes |
 |---|---|---|---|
-| YOLO train / weights / real `classifiers/yolo.py` adapter | TBD | ❌ | Stub raises “YOLO is not available yet”; no invented outputs |
+| YOLO-cls weights + `classifiers/yolo.py` adapter | teammate / integration | 🟡 experimental | `models/yolo-cls-exp`; Ultralytics classify; uncalibrated; private stratified split ≠ `wafer_split_v1`; overlaps val demo — not a fair CNN comparison |
+| Separate YOLO val-demo stream | integration | ✅ | `streams/stream_val_yolo.csv` (`classifier=yolo`, `model_version=yolo-cls-exp`) |
+| Retrain on shared lot-grouped split | TBD | ❌ | Required before any honest compare / combine rule |
 
 ## Phase 4 — factory simulation (Nasser & Shefali Cat)
 | Item | Owner | Status | Notes |
@@ -55,7 +57,7 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Ph
 ## Phase 5 — agent
 | Item | Owner | Status | Notes |
 |---|---|---|---|
-| `wafer/classifiers/` (CNN + YOLO stub) | Phase 5 | ✅ | Default CNN; YOLO unavailable error; no silent fallback |
+| `wafer/classifiers/` (CNN + experimental YOLO) | Phase 5 | ✅ | Default CNN; YOLO optional; no silent fallback |
 | AMD Token Factory client + tool loop | Phase 5 | ✅ | Tools: classify_wafer, lookup_root_cause, check_lot_history, estimate_impact |
 | CLI + callable `WaferAgent` | Phase 5 | ✅ | `python -m wafer.agent`; `--debug` for timings; answer-only by default |
 | Parallel tool calls + compact history | Phase 5 | ✅ | Status flow: 1× history then parallel root-cause + impact |
@@ -66,5 +68,5 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Ph
 | Item | Status | Notes |
 |---|---|---|
 | Dashboard (`dashboard/`, FastAPI + static UI) | ✅ | Operations / Copilot / Model quality; see `dashboard/README.md` |
-| YOLO second opinion in the dashboard | ⏳ | Shown automatically once `get_classifier("yolo")` stops raising |
+| YOLO second opinion in the dashboard | 🟡 | Available when ultralytics + weights present; agent follows stream `classifier` |
 | End-to-end demo polish | ❌ | stream → CNN → alert → agent → UI |

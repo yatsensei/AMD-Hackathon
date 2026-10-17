@@ -34,11 +34,11 @@ __pycache__/
 *.npz
 !dashboard/data/stream_maps.npz
 
-# Models not served in the Space (keep only v0-ens3 via Dockerfile COPY)
+# Models not served in the Space (v0-ens3 + yolo-cls-exp are COPY'd explicitly)
 models/v0/
 models/v0-tta/
 
-# Streams other than the val ens3 demo
+# Streams other than the packaged demos (ens3 CNN + experimental YOLO)
 streams/stream_val.csv
 streams/stream_val_unscored.csv
 streams/stream_test_unscored.csv

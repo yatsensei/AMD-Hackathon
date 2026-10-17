@@ -1,0 +1,13 @@
+{
+  "0": "Center",
+  "1": "Donut",
+  "2": "Edge-Loc",
+  "3": "Edge-Ring",
+  "4": "Loc",
+  "5": "Near-full",
+  "6": "Random",
+  "7": "Scratch",
+  "8": "none",
+  "verified_against_weights": true,
+  "matches_wafer_constants_CLASSES": true
+}

@@ -115,6 +115,13 @@ def check_lot_history(stream_df: pd.DataFrame, *, as_of, lot_id: str | None = No
         if seen and seen != [expected_classifier]:
             classifier_note = (f"stream predictions are from classifier(s) {seen}; "
                                f"selected backend is {expected_classifier!r}")
+    if "classifier" in past.columns and len(past) and (past["classifier"].astype(str) == "yolo").any():
+        yolo_note = (
+            "YOLO-cls predictions are experimental and uncalibrated; the model was trained "
+            "on a private stratified sample (not wafer_split_v1) that overlaps this val demo "
+            "stream. Do not claim fair comparison or held-out confirmation vs the CNN."
+        )
+        classifier_note = (f"{classifier_note} {yolo_note}" if classifier_note else yolo_note)
 
     # --- alerts: full history up to as_of; never filter by lot_id
     if not has_predictions(past):

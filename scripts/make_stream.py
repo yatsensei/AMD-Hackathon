@@ -38,8 +38,10 @@ def main(argv=None):
     p.add_argument("--wafer-value", type=float, default=WAFER_VALUE)
     p.add_argument("--mock", action="store_true", help="use wafer.infer_mock instead of the CNN")
     p.add_argument("--no-predict", action="store_true", help="write the unscored stream and stop")
-    p.add_argument("--classifier", default="cnn", help="backend name recorded on scored rows (cnn)")
-    p.add_argument("--out", default=None, help="default: streams/stream_<split>.csv")
+    p.add_argument("--classifier", default="cnn",
+                   help="backend: cnn (default) or yolo (experimental YOLO-cls)")
+    p.add_argument("--out", default=None,
+                   help="default: streams/stream_<split>.csv (use stream_val_yolo.csv for YOLO)")
     a = p.parse_args(argv)
 
     stream = build_stream(a.split, n_lots=a.n_lots, lot_size=a.lot_size, excursion_start_lot=a.excursion_start_lot,
