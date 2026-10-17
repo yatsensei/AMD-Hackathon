@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yield Copilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 12h10M12 7v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Yield Copilot</div>
+        <div class="brand-sub">Etch bay · simulated line</div>
+      </div>
+    </div>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="ops" role="tab">Operations</button>
+      <button class="tab" data-tab="agent" role="tab">Copilot</button>
+      <button class="tab" data-tab="model" role="tab">Model quality</button>
+    </nav>
+
+    <div class="clock-group">
+      <div class="clock">
+        <span class="clock-label">Line time</span>
+        <span id="clock" class="mono">--</span>
+      </div>
+      <div class="playback" aria-label="Replay controls">
+        <button id="btn-restart" class="icon-btn" title="Restart replay"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5"/></svg></button>
+        <button id="btn-play" class="icon-btn primary" title="Play / pause"><svg id="ico-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" class="fill"/></svg></button>
+        <button id="btn-lot" class="icon-btn" title="Advance one lot"><svg viewBox="0 0 24 24"><path d="M5 5v14l9-7zM16 5v14"/></svg></button>
+        <select id="speed" title="Replay speed">
+          <option value="1">1×</option><option value="5" selected>5×</option><option value="25">25×</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <div class="statusbar">
+    <span class="pill" id="pill-model"><span class="dot dot-good"></span>Classifier</span>
+    <span class="pill" id="pill-yolo"><span class="dot"></span>Second opinion</span>
+    <span class="pill" id="pill-agent"><span class="dot"></span>Copilot (AMD Token Factory)</span>
+    <span class="statusbar-note" id="stream-note"></span>
+  </div>
+
+  <main>
+    <!-- OPERATIONS -->
+    <section class="view active" id="view-ops">
+      <div class="kpis" id="kpis"></div>
+      <div class="grid">
+        <div class="col-main">
+          <div class="card">
+            <div class="card-head"><h2>Tools</h2><span class="muted">Defective wafers per lot · alert rule: ≥3 of one pattern on one tool within 24 h</span></div>
+            <div class="tools" id="tools"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Inspection feed</h2><span class="muted">Every wafer classified as it leaves the tool · newest first</span></div>
+            <div class="table-wrap">
+              <table class="feed">
+                <thead><tr><th>Time</th><th>Lot</th><th>Tool</th><th>Wafer</th><th>Pattern</th><th>Confidence</th><th>Status</th></tr></thead>
+                <tbody id="feed"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <aside class="col-side">
+          <div class="card">
+            <div class="card-head"><h2>Alerts</h2><span class="muted" id="alert-count"></span></div>
+            <div id="alerts"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Decision log</h2><span class="muted">Engineer actions</span></div>
+            <ul class="log" id="decisions"></ul>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- COPILOT -->
+    <section class="view" id="view-agent">
+      <div class="agent-layout">
+        <div class="card chat-card">
+          <div class="card-head"><h2>Copilot</h2><span class="muted">Answers from the live line data through tools: classifier, alert rule, lot history, root causes, impact</span></div>
+          <div class="chat" id="chat">
+            <div class="chat-empty" id="chat-empty">
+              <p>Ask about the line. The copilot only sees wafers up to the current line time.</p>
+              <div class="suggestions">
+                <button class="chip-btn" data-q="What is going on with ETCH-04?">What is going on with ETCH-04?</button>
+                <button class="chip-btn" data-q="Which lots should we hold, and what is at risk?">Which lots should we hold, and what is at risk?</button>
+                <button class="chip-btn" data-q="Summarise the line in the last 24 hours.">Summarise the line in the last 24 hours</button>
+              </div>
+            </div>
+          </div>
+          <form class="ask" id="ask-form">
+            <input id="ask-input" placeholder="Ask the copilot…" autocomplete="off">
+            <button class="btn primary" type="submit">Ask</button>
+          </form>
+        </div>
+        <div class="card agent-side">
+          <div class="card-head"><h2>How it answers</h2></div>
+          <ol class="steps">
+            <li><b>Classifier</b> names each wafer's defect pattern with calibrated confidence and flags uncertain wafers.</li>
+            <li><b>Alert rule</b> fires when one tool produces the same pattern repeatedly.</li>
+            <li><b>Copilot</b> (LLM on AMD Token Factory) explains the likely cause, lots at risk and cost, citing its sources.</li>
+            <li><b>Engineer</b> decides: hold lots, open a ticket or dismiss.</li>
+          </ol>
+          <p class="fine">Root causes are triage possibilities from published sources, not diagnoses. Cost uses an adjustable wafer value.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODEL QUALITY -->
+    <section class="view" id="view-model">
+      <div class="kpis" id="model-kpis"></div>
+      <div class="card">
+        <div class="card-head"><h2>Per-class results</h2><span class="muted" id="model-note"></span></div>
+        <div class="table-wrap"><table class="perclass" id="perclass"></table></div>
+      </div>
+      <div class="charts" id="charts"></div>
+    </section>
+  </main>
+
+  <!-- Wafer inspector -->
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div><div class="eyebrow">Wafer inspector</div><h3 id="dr-title">—</h3></div>
+      <button class="icon-btn" id="dr-close" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="drawer-body" id="dr-body"></div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>

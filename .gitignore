@@ -1,9 +1,11 @@
 # Data, runs and large binaries never go in git (spec Rule 0.6)
 /data/
+/data
 /experiments/
 /yolo_data/
 *.pkl
 *.npz
+!dashboard/data/stream_maps.npz
 
 # Python
 __pycache__/
