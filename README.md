@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: mit
-short_description: Wafer-map yield copilot — CNN, factory alerts, AMD Token Factory agent
+short_description: Wafer yield copilot — CNN, factory alerts, AMD agent
 ---
 
 # Wafer-map yield copilot
