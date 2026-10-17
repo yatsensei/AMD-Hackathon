@@ -1,3 +1,15 @@
+---
+title: Yield Copilot
+emoji: 🏭
+colorFrom: red
+colorTo: gray
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+short_description: Wafer-map yield copilot — CNN, factory alerts, AMD Token Factory agent
+---
+
 # Wafer-map yield copilot
 
 AMD Developer Hackathon ACT III — Track 1 "Intelligent Industry".
@@ -7,11 +19,34 @@ AMD Developer Hackathon ACT III — Track 1 "Intelligent Industry".
 - **Teammate hand-off (data, CNN, factory, agent):** [`docs/HANDOFF.md`](docs/HANDOFF.md)
 - **Hackathon brief:** [`docs/HACKATHON_BRIEF.md`](docs/HACKATHON_BRIEF.md)
 - **AMD / Token Factory notes:** [`docs/AMD_SETUP.md`](docs/AMD_SETUP.md)
+- **Hugging Face Docker Space:** [`docs/DEPLOY_SPACE.md`](docs/DEPLOY_SPACE.md)
 
-**Working today:** Phases 1–2 (data + CNN), Phase 4 (factory stream/alerts), **Phase 5 (Token Factory agent + CNN tools)**.  
-**Pending:** YOLO adapter (Phase 3), Streamlit dashboard (Phase 6), final test-set eval, end-to-end demo polish (Phase 7).
+**Working today:** Phases 1–2 (data + CNN), Phase 4 (factory stream/alerts), Phase 5 (Token Factory agent + CNN tools), **Phase 6 dashboard**.  
+**Pending:** YOLO adapter (Phase 3), final test-set eval, Space deploy (prep only — see below).
 
-## Phase 5 — run the agent
+## Hugging Face Space (Docker)
+
+The Space serves the Yield Copilot dashboard:
+
+```text
+uvicorn dashboard.server:app --host 0.0.0.0 --port 7860
+```
+
+Defaults: `models/v0-ens3`, `streams/stream_val_ens3.csv`, bundled `dashboard/data/stream_maps.npz` (no raw dataset).
+
+**Host secrets / variables (required for Copilot):** `AMD_API_KEY`, `AMD_BASE_URL`, `AMD_MODEL`.  
+Build/run instructions and blockers: [`docs/DEPLOY_SPACE.md`](docs/DEPLOY_SPACE.md). Packaging files: `Dockerfile`, `.dockerignore`, `requirements-space.txt`.
+
+## Local dashboard
+
+```bash
+pip install -r requirements.txt -r dashboard/requirements.txt torch
+cp .env.example .env   # set AMD_API_KEY, AMD_BASE_URL, AMD_MODEL
+uvicorn dashboard.server:app --port 8000
+# open http://localhost:8000/?t=400
+```
+
+## Phase 5 — run the agent (CLI)
 
 ```bash
 pip install -r requirements.txt torch torchvision   # torch needed to score wafers with the CNN

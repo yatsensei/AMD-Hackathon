@@ -6,12 +6,16 @@ validation stream as a live etch line, so every screen shows real WM-811K wafers
 ```bash
 pip install -r requirements.txt -r dashboard/requirements.txt
 uvicorn dashboard.server:app --port 8000        # from the repo root
-# open http://localhost:8000   (add ?t=330 to start just after the ETCH-04 excursion)
+# open http://localhost:8000   (add ?t=400 to start after the ETCH-04 excursion)
 ```
 
-Works without the 2 GB dataset: the 500 stream maps ship in `dashboard/data/stream_maps.npz`.
+Works without the 2 GB dataset: the 500 stream maps ship in `dashboard/data/stream_maps.npz`
+(also used by `classify_wafer` via `wafer.data.access.get_wafer_map`).
 The copilot tab needs `AMD_API_KEY`, `AMD_BASE_URL` and `AMD_MODEL` (see `.env.example`);
 everything else runs offline.
+
+**Hugging Face Docker Space:** see [`docs/DEPLOY_SPACE.md`](../docs/DEPLOY_SPACE.md)
+(`uvicorn` on `0.0.0.0:7860`).
 
 ## Views
 

@@ -44,7 +44,6 @@ MODEL_DIR = Path(os.environ.get("WAFER_MODEL_DIR") or REPO_ROOT / "models" / "v0
 os.environ.setdefault("WAFER_MODEL_DIR", str(MODEL_DIR))   # the agent's CNN backend uses the same model
 # Plain wafer map in the dashboard palette: off-wafer transparent, passing die grey, failing die crimson.
 MAP_RGBA = np.array([[0, 0, 0, 0], [214, 218, 225, 255], [179, 18, 27, 255]], dtype=np.uint8)
-DEMO_MAPS = HERE / "data" / "stream_maps.npz"
 REPORT_DIR = REPO_ROOT / "docs" / "results" / "report"
 
 app = FastAPI(title="Yield Copilot", docs_url="/api/docs", redoc_url=None)
@@ -64,23 +63,8 @@ def stream() -> pd.DataFrame:
     return df.sort_values(["timestamp", "lot_id", "wafer_in_lot"]).reset_index(drop=True)
 
 
-@lru_cache(maxsize=1)
-def _demo_maps() -> dict[int, np.ndarray]:
-    if not DEMO_MAPS.exists():
-        return {}
-    z = np.load(DEMO_MAPS)
-    out, offset = {}, 0
-    for uid, (h, w) in zip(z["uid"], z["shape"]):
-        out[int(uid)] = z["flat"][offset:offset + h * w].reshape(h, w)
-        offset += h * w
-    return out
-
-
 def wafer_map(uid: int) -> np.ndarray:
-    """Raw map: the bundled demo pack first (works without the dataset), else the full dataset."""
-    m = _demo_maps().get(int(uid))
-    if m is not None:
-        return m
+    """Raw map via wafer.data.access (demo stream pack first, then labeled.pkl if present)."""
     try:
         from wafer.data.access import get_wafer_map
         return get_wafer_map(uid)

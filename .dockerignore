@@ -1,0 +1,72 @@
+# Secrets and local env
+.env
+.env.*
+!.env.example
+kaggle.json
+**/*credentials*
+**/*secret*
+
+# Virtualenvs / caches
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.miopen/
+
+# Git / IDE
+.git/
+.gitignore
+.cursor/
+.vscode/
+.idea/
+*.swp
+
+# Raw WM-811K and rebuild artifacts (2GB+) — Space uses dashboard/data/stream_maps.npz
+/data/
+/experiments/
+/yolo_data/
+*.pkl
+*.npz
+!dashboard/data/stream_maps.npz
+
+# Models not served in the Space (keep only v0-ens3 via Dockerfile COPY)
+models/v0/
+models/v0-tta/
+
+# Streams other than the val ens3 demo
+streams/stream_val.csv
+streams/stream_val_unscored.csv
+streams/stream_test_unscored.csv
+
+# Dev / docs not needed at runtime
+tests/
+notebooks/
+scripts/
+configs/
+splits/
+docs/specs/
+docs/AMD_SETUP.md
+docs/HANDOFF.md
+docs/HACKATHON_BRIEF.md
+docs/INTEGRATION.md
+docs/STATUS.md
+docs/results/OVERNIGHT.md
+docs/results/MODEL_CARD.md
+docs/results/data_report.md
+docs/results/leaderboard.csv
+docs/results/screening_vs_e0.md
+docs/results/e0b_val/
+docs/results/v0_val/
+docs/results/v0-tta_val/
+docs/results/v0-ens5_val/
+test_amd.py
+*.md
+!LICENSE
+
+# Local agent store / misc
+agent-transcripts/
