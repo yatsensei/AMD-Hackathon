@@ -164,16 +164,13 @@
   <header class="cp-head">
     <span class="cp-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg></span>
     <div><b>Copilot</b><small id="cp-sub">AMD Token Factory</small></div>
+    <button class="icon-btn ghost" id="cp-new" type="button" title="New chat" aria-label="Start a new chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     <button class="icon-btn ghost" id="cp-close" type="button" aria-label="Close copilot"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </header>
   <div class="chat" id="chat">
     <div class="chat-empty" id="chat-empty">
       <p>Ask about the line. The copilot sees wafers up to the current line time only, and answers from the line's own data.</p>
-      <div class="suggestions">
-        <button class="chip-btn" type="button" data-q="What is going on with ETCH-04?">What is going on with ETCH-04?</button>
-        <button class="chip-btn" type="button" data-q="Which lots should we hold, and what is at risk?">Which lots should we hold, and what is at risk?</button>
-        <button class="chip-btn" type="button" data-q="Summarise the line in the last 24 hours.">Summarise the last 24 hours</button>
-      </div>
+      <div class="suggestions" id="suggestions"></div>
       <ol class="steps">
         <li id="steps-classifier"><b>Line model</b> names each wafer's defect pattern.</li>
         <li><b>Alert rule</b> fires when one tool repeats a pattern.</li>
@@ -182,6 +179,7 @@
       </ol>
     </div>
   </div>
+  <div class="cp-context" id="cp-context" hidden></div>
   <form class="ask" id="ask-form">
     <input id="ask-input" placeholder="Ask about a tool, lot or wafer" autocomplete="off" aria-label="Question for the copilot">
     <button class="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -193,6 +191,7 @@
 <aside class="drawer" id="drawer" aria-hidden="true">
   <div class="drawer-head">
     <div><div class="eyebrow" id="dr-eyebrow">Wafer inspector</div><h3 id="dr-title">—</h3></div>
+    <button class="btn ask-wafer" id="dr-ask" type="button" hidden><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>Ask about this wafer</button>
     <button class="icon-btn ghost" id="dr-close" type="button" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </div>
   <div class="drawer-body" id="dr-body"></div>

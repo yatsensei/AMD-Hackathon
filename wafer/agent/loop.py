@@ -8,7 +8,11 @@ from typing import Any
 from wafer.agent.client import AmdClient
 from wafer.agent.prompts import SYSTEM_PROMPT
 from wafer.agent.session import AgentContext
+from wafer.agent.snapshot import line_snapshot
 from wafer.agent.tools import TOOL_DEFINITIONS, execute_tool
+
+MAX_HISTORY_TURNS = 6          # earlier question/answer pairs sent with a new question
+MAX_HISTORY_CHARS = 2400       # per earlier answer; tool outputs are never re-sent
 
 
 def _message_to_dict(msg) -> dict:
@@ -86,14 +90,35 @@ def _run_tools(tool_calls: list[dict], ctx: AgentContext) -> list[dict]:
     return [results[tc["id"]] for tc in tool_calls]
 
 
+def build_messages(ctx: AgentContext, user_message: str, *, history: list[dict] | None = None,
+                   ui_context: dict | None = None, system_prompt: str = SYSTEM_PROMPT) -> list[dict]:
+    """System prompt + line snapshot, the last few question/answer pairs, then the question.
+
+    The snapshot goes inside the one system message: some chat templates (Qwen on vLLM)
+    reject a second system message.
+    """
+    system = f"{system_prompt}\n## Line snapshot\n{line_snapshot(ctx, ui_context)}"
+    messages: list[dict] = [{"role": "system", "content": system}]
+    for turn in (history or [])[-MAX_HISTORY_TURNS:]:
+        q, a = str(turn.get("question") or "").strip(), str(turn.get("answer") or "").strip()
+        if q and a:
+            messages.append({"role": "user", "content": q})
+            messages.append({"role": "assistant", "content": a[:MAX_HISTORY_CHARS]})
+    messages.append({"role": "user", "content": user_message})
+    return messages
+
+
 def run_turn(client: AmdClient, ctx: AgentContext, user_message: str, *,
-             max_rounds: int = 8, system_prompt: str = SYSTEM_PROMPT) -> dict:
-    """Run one user question through the tool loop. Returns answer + tool_trace + timings."""
+             max_rounds: int = 8, system_prompt: str = SYSTEM_PROMPT,
+             history: list[dict] | None = None, ui_context: dict | None = None) -> dict:
+    """Run one user question through the tool loop. Returns answer + tool_trace + timings.
+
+    `history` is earlier [{"question", "answer"}] pairs from the same conversation;
+    `ui_context` is what the engineer is looking at ({"page", "tool_id", "lot_id", "wafer_uid"}).
+    """
     t_total = time.perf_counter()
-    messages: list[dict] = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_message},
-    ]
+    messages = build_messages(ctx, user_message, history=history, ui_context=ui_context,
+                              system_prompt=system_prompt)
     tool_trace: list[dict] = []
     amd_calls: list[dict] = []
     answer = None
@@ -101,10 +126,11 @@ def run_turn(client: AmdClient, ctx: AgentContext, user_message: str, *,
 
     for round_i in range(max_rounds):
         try:
-            # Keep max_tokens high enough for Qwen reasoning_tokens + a complete short answer.
-            # (Thinking counts toward max_tokens; 512/768 often ends finish_reason=length.)
+            # Keep max_tokens high enough for Qwen reasoning_tokens + a complete answer
+            # (thinking counts toward max_tokens; 512/768 often ends finish_reason=length;
+            # comparison answers with a small table need more than 1024).
             t0 = time.perf_counter()
-            resp = client.chat(messages, tools=TOOL_DEFINITIONS, max_tokens=1024)
+            resp = client.chat(messages, tools=TOOL_DEFINITIONS, max_tokens=1536)
             amd_ms = (time.perf_counter() - t0) * 1000.0
         except Exception as exc:
             return {

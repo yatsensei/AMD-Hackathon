@@ -63,6 +63,9 @@ One line per item from spec Sections 3.10, 6.1–6.3, 7.6 and 9.1–9.4, plus Ph
 | Parallel tool calls + compact history | Phase 5 | ✅ | Status flow: 1× history then parallel root-cause + impact |
 | Tests (`test_classifiers`, `test_agent`, factory) | Phase 5 | ✅ | Mocked LLM; no live key required |
 | Docs (README, HANDOFF, STATUS, AMD_SETUP, `.env.example`) | Phase 5 | ✅ | How to run + works vs pending |
+| Wider questions: 7 more tools (`wafer/factory/insights.py`) | Agent v2 | ✅ | line_overview, defect_trend, find_wafers, explain_wafer, describe_pattern, model_performance, get_decisions |
+| Conversation memory + line snapshot + UI context | Agent v2 | ✅ | Last 6 Q/A pairs per chat; snapshot of ids/alerts/decisions in the system message; dashboard sends page / lot / wafer |
+| Live evaluation | Agent v2 | ⏳ | `python scripts/agent_eval.py` (needs AMD key) writes `docs/results/agent_eval.md`; not run yet |
 
 ## Phase 6–7 — pending
 | Item | Status | Notes |
