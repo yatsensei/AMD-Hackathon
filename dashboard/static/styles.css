@@ -412,3 +412,17 @@ th:last-child, td:last-child { padding-right: 18px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* copilot: context chip, suggestions header, ask-about-wafer */
+.cp-head #cp-new { margin-left: auto; }
+.cp-head #cp-new + .icon-btn { margin-left: 0; }
+.cp-context { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; background: #fff; font-size: 12px; color: var(--ink-2); }
+.cp-context .chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 3px 4px 3px 10px; border: 1px solid var(--line); border-radius: 999px; background: #fafaf9; }
+.cp-context .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-context .chip button { width: 20px; height: 20px; border: 0; border-radius: 50%; background: transparent; color: var(--ink-3); display: grid; place-items: center; }
+.cp-context .chip button:hover { background: var(--line-2); color: var(--ink); }
+.cp-context .chip svg { width: 12px; height: 12px; stroke-width: 2.2; }
+.suggest-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 4px 0 2px; }
+.drawer-head .ask-wafer { margin-left: auto; height: 32px; font-size: 12.5px; }
+.drawer-head .ask-wafer svg { color: var(--red); }
+.drawer-head { align-items: center; }

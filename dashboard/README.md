@@ -42,7 +42,7 @@ The app has a left sidebar (icon rail on narrow screens, bottom bar on phones) a
 | Review queue | Wafers the model sent to a person; confirm or reject (kept in the browser tab only) | `needs_review` on the stream |
 | Decisions | Audit log of alert actions with who made them (the demo sign-in name) and the line time | `/api/decisions` (in memory) |
 | Wafer inspector | Map; line prediction from the scored stream; optional live CNN / YOLO opinions (not the alert source). Attention heatmap is CNN-only. | `wafer.infer`, `wafer.explain`, `wafer.classifiers` |
-| Copilot (chat bubble on every page) | Questions answered from line data up to the submitted `as_of` (shown on each answer) | `wafer.agent.WaferAgent` (AMD Token Factory) |
+| Copilot (chat bubble on every page) | Questions answered from line data up to the submitted `as_of` (shown on each answer). Remembers the conversation (New chat resets it), knows the page / lot / wafer you are looking at, suggests questions for the page, and "Ask about this wafer" in the inspector. | `wafer.agent.WaferAgent` (AMD Token Factory) |
 
 Model metrics and charts are no longer a page in the app: see `docs/results/MODEL_CARD.md` and
 `docs/results/report/`. `/api/model` still serves the homepage's per-class chart.

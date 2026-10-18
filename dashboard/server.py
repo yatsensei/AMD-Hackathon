@@ -19,16 +19,18 @@ import io
 import json
 import os
 import threading
+from collections import OrderedDict
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from wafer.constants import CLASSES
 from wafer.env import REPO_ROOT
@@ -112,6 +114,7 @@ def agent():
             _agent = WaferAgent.from_env(
                 stream(), as_of=str(stream()["timestamp"].iloc[0]),
                 classifier=backend, verify_model=False,
+                decisions=lambda: list(_decisions),   # the copilot can see engineer decisions
             )
         except Exception as e:
             _agent_error = str(e).split(". Copy")[0]
@@ -312,9 +315,25 @@ def decide(d: Decision):
     return rec
 
 
+_ID = r"^[A-Za-z0-9_-]{1,40}$"
+_conversations: "OrderedDict[str, list[dict]]" = OrderedDict()   # conversation id -> [{question, answer}]
+MAX_CONVERSATIONS = 200
+
+
+class UIContext(BaseModel):
+    """What the engineer is looking at. Strictly formatted: it is placed in the model prompt."""
+    page: Literal["overview", "alerts", "tools", "lots", "review", "decisions"] | None = None
+    tool_id: str | None = Field(None, pattern=_ID)
+    lot_id: str | None = Field(None, pattern=_ID)
+    wafer_uid: int | None = Field(None, ge=0)
+    wafer_label: str | None = Field(None, pattern=r"^[A-Za-z0-9 ·_.-]{1,60}$")
+
+
 class Question(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=2000)
     as_of: str
+    conversation_id: str = Field("", pattern=r"^[A-Za-z0-9_-]{0,64}$")
+    context: UIContext | None = None
 
 
 @app.post("/api/agent")
@@ -324,9 +343,18 @@ def ask(q: Question):
         return JSONResponse({"answer": None, "error": f"Agent not configured: {err}",
                              "as_of": q.as_of}, status_code=503)
     with _lock:
+        history = list(_conversations.get(q.conversation_id, [])) if q.conversation_id else []
         ag.set_as_of(q.as_of)
-        out = ag.ask(q.question)
+        out = ag.ask(q.question, history=history,
+                     ui_context=q.context.model_dump(exclude_none=True) if q.context else None)
+        if q.conversation_id and out.get("answer"):
+            _conversations.setdefault(q.conversation_id, []).append(
+                {"question": q.question, "answer": out["answer"]})
+            _conversations.move_to_end(q.conversation_id)
+            while len(_conversations) > MAX_CONVERSATIONS:
+                _conversations.popitem(last=False)
     return {"answer": out.get("answer"), "error": out.get("error"), "as_of": q.as_of,
+            "conversation_id": q.conversation_id, "turn": len(history) + 1,
             "tools": [t.get("tool") for t in (out.get("timings") or {}).get("tools", [])]}
 
 

@@ -57,6 +57,7 @@ const S = {
   meta: null, t: 0, playing: false, timer: null, state: null, wafers: [], seen: new Set(), inflight: false,
   page: "overview", focusTool: null, openLot: null, reviewed: new Map(), user: null,
   filter: { q: "", tool: "", pattern: "", status: "all" },
+  convId: null, askFocus: null, drawerWafer: null, lastTool: null,
 };
 
 const lineMeta = () => S.meta?.model?.line || {
@@ -438,6 +439,7 @@ function go(page) {
   $("#page-sub").textContent = PAGES[page][1];
   document.title = `${PAGES[page][0]} · Sentry`;
   if (S.state) renderAll();
+  if (!$("#copilot").hidden) renderCopilotChrome();
   if (!S.focusTool) window.scrollTo(0, 0);
 }
 const route = () => go(location.hash.slice(1));
@@ -452,6 +454,7 @@ async function openWafer(uid) {
   $("#drawer").classList.add("open");
   $("#drawer").setAttribute("aria-hidden", "false");
   $("#dr-title").textContent = `Wafer ${uid}`;
+  $("#dr-ask").hidden = true;
   $("#dr-body").innerHTML = `<div class="empty">Classifying…</div>`;
   const w = await api(`wafer/${uid}`);
   const ctx = w.context || {};
@@ -459,6 +462,8 @@ async function openWafer(uid) {
   const c = w.cnn;
   const streamClf = w.stream_classifier || lineMeta().classifier;
   $("#dr-title").textContent = ctx.lot_id ? `${ctx.lot_id} · wafer ${ctx.wafer} · ${ctx.tool_id}` : `Wafer ${uid}`;
+  S.drawerWafer = { wafer_uid: uid, wafer_label: ctx.lot_id ? `${ctx.lot_id} W${ctx.wafer}` : `wafer ${uid}`, pattern: w.line?.pattern || c?.pattern };
+  $("#dr-ask").hidden = false;
 
   if (!line) {
     $("#dr-body").innerHTML = `<div class="empty">No stream prediction for this wafer.</div>`;
@@ -529,10 +534,65 @@ function closeWafer() {
 }
 
 /* ---------------------------------------------------------------- copilot */
+const newConvId = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+/** What the engineer is looking at, sent with each question so "this wafer" and "that lot" resolve. */
+function uiContext() {
+  const c = { page: S.page };
+  if (S.askFocus?.wafer_uid) Object.assign(c, { wafer_uid: S.askFocus.wafer_uid, wafer_label: S.askFocus.wafer_label });
+  else if (S.page === "lots" && S.openLot) c.lot_id = S.openLot;
+  else if (S.page === "tools" && S.lastTool) c.tool_id = S.lastTool;
+  return c;
+}
+
+function focusLabel() {
+  const c = uiContext();
+  if (c.wafer_uid) return c.wafer_label || `wafer ${c.wafer_uid}`;
+  if (c.lot_id) return c.lot_id;
+  if (c.tool_id) return c.tool_id;
+  return "";
+}
+
+function suggestionsFor() {
+  const f = S.askFocus;
+  if (f?.wafer_uid) {
+    return [`Why did the model call this wafer ${f.pattern === "none" ? "clean" : f.pattern}?`,
+      "What else could this wafer be?", "Where on the wafer is the defect?"];
+  }
+  const alert = (S.state?.alerts || []).find((a) => !a.decision) || (S.state?.alerts || [])[0];
+  const lot = S.openLot || S.wafers[0]?.lot_id;
+  const tool = S.lastTool || alert?.tool_id || S.meta?.tools?.[0];
+  return {
+    overview: ["How is the line doing right now?", "Which tool is worst, and why?", "Which wafers need review?"],
+    alerts: alert ? [`Explain the ${alert.pattern} alert on ${alert.tool_id} and what to check first`, `When did the ${alert.pattern} problem on ${alert.tool_id} start?`, "What is at risk if we keep running?"]
+      : ["Is any tool close to an alert?", "How does the alert rule work?", "How is the line doing right now?"],
+    tools: ["Compare the four tools", `Is ${tool} getting worse?`, `What patterns has ${tool} produced?`],
+    lots: [`What happened in ${lot}?`, "Which lots should we hold?", "Which lots have the most defects?"],
+    review: ["Why are these wafers uncertain?", "How reliable is the model on Loc and Scratch?", "What does a low confidence score mean here?"],
+    decisions: ["What have we decided so far?", "Which lots are held right now?", "Is anything still open?"],
+  }[S.page] || ["How is the line doing right now?", "How accurate is the model?", "What is an Edge-Ring pattern?"];
+}
+
+function renderCopilotChrome() {
+  const sug = $("#suggestions");
+  if (sug) sug.innerHTML = `<div class="suggest-label">Suggested${focusLabel() ? ` for ${esc(focusLabel())}` : ""}</div>` +
+    suggestionsFor().map((q) => `<button class="chip-btn" type="button" data-q="${esc(q)}">${esc(q)}</button>`).join("");
+  const label = focusLabel();
+  $("#cp-context").hidden = !label;
+  $("#cp-context").innerHTML = label ? `<span class="chip" title="Questions about 'this' refer to ${esc(label)}"><span>Looking at ${esc(label)}</span>${S.askFocus ? `<button type="button" id="cp-unfocus" aria-label="Stop asking about ${esc(label)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>` : ""}</span>` : "";
+}
+
 function openCopilot(on = true) {
   $("#copilot").hidden = !on;
   $("#copilot-fab").setAttribute("aria-expanded", String(on));
-  if (on) setTimeout(() => $("#ask-input").focus(), 50);
+  if (on) { renderCopilotChrome(); setTimeout(() => $("#ask-input").focus(), 50); }
+}
+
+function newChat() {
+  S.convId = newConvId();
+  $("#chat").innerHTML = "";
+  $("#chat").appendChild(S.emptyChat.cloneNode(true));
+  renderCopilotChrome();
 }
 
 async function ask(q) {
@@ -551,7 +611,7 @@ async function ask(q) {
     const r = await api("agent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: q, as_of: askedAt }),
+      body: JSON.stringify({ question: q, as_of: askedAt, conversation_id: S.convId, context: uiContext() }),
     });
     const asOfEcho = r.as_of || askedAt;
     pending.classList.remove("pending");
@@ -640,7 +700,7 @@ async function init() {
     const btn = e.target.closest(".evidence button[data-uid], .lot-wafers button[data-uid], img[data-open]");
     if (tr || btn) return openWafer(+(tr?.dataset.uid || btn.dataset.uid || btn.dataset.open));
     const tool = e.target.closest(".tool[data-tool]");
-    if (tool) { S.focusTool = tool.dataset.tool; location.hash = "tools"; if (S.page === "tools") renderTools(); return; }
+    if (tool) { S.focusTool = S.lastTool = tool.dataset.tool; location.hash = "tools"; if (S.page === "tools") renderTools(); return; }
     const lot = e.target.closest("#lots tr.click");
     if (lot) { S.openLot = S.openLot === lot.dataset.lot ? null : lot.dataset.lot; renderLots(); return; }
     const rv = e.target.closest("[data-review]");
@@ -669,8 +729,21 @@ async function init() {
   // copilot
   $("#copilot-fab").addEventListener("click", () => openCopilot(true));
   $("#cp-close").addEventListener("click", () => openCopilot(false));
+  $("#cp-new").addEventListener("click", () => { S.askFocus = null; newChat(); $("#ask-input").focus(); });
+  $("#copilot").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip-btn");
+    if (chip) return ask(chip.dataset.q);
+    if (e.target.closest("#cp-unfocus")) { S.askFocus = null; renderCopilotChrome(); }
+  });
+  $("#dr-ask").addEventListener("click", () => {
+    if (!S.drawerWafer) return;
+    S.askFocus = S.drawerWafer;
+    closeWafer();
+    openCopilot(true);
+  });
   $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); const v = $("#ask-input").value; $("#ask-input").value = ""; ask(v); });
-  $$(".chip-btn").forEach((b) => b.addEventListener("click", () => ask(b.dataset.q)));
+  S.emptyChat = $("#chat-empty").cloneNode(true);   // after offline / YOLO notices are added
+  newChat();   // each page load starts a fresh conversation, matching the empty chat on screen
 }
 
 init().catch((e) => {
